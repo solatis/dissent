@@ -65,10 +65,10 @@ acceptLoop host port callback =
 --   loop accepting said connections.
 --
 --   This is a blocking operation.
-acceptQuorumLoop :: T.Quorum          -- ^ The Quorum we need to start accepting connections from
+quorumAcceptLoop :: T.Quorum          -- ^ The Quorum we need to start accepting connections from
                  -> (Socket -> IO ()) -- ^ Callback function that is called for each incoming connection
                  -> IO ()             -- ^ Our output Quorum, with the acceptor bound
-acceptQuorumLoop quorum callback =
+quorumAcceptLoop quorum callback =
 
       -- This function helps us determine the socket address other nodes knows us by
   let localAddr :: SockAddr

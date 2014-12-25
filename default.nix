@@ -8,7 +8,6 @@ cabal.mkDerivation (self: {
   pname = "dissent";
   version = "0.0.1";
   src = ./.;
-  doCheck = false;
   buildDepends = [
     deepseq errors hslogger HsOpenSSL network vector
   ];
