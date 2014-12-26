@@ -17,56 +17,57 @@ spec :: Spec
 spec = do
   describe "initializing a quorum" $ do
     it "fails on an empty quorum" $
-      (initialize [] (SockAddrInet 1234 0)) `shouldBe` Left "Cannot find address in quorum: 0.0.0.0:1234"
+      (initialize [] (T.Address "0.0.0.0" "1234")) `shouldBe` Left "Cannot find address in quorum: Address {hostName = \"0.0.0.0\", port = \"1234\"}"
     it "fails on a quorum without self" $
-      (initialize [SockAddrInet 1234 1] (SockAddrInet 1234 0)) `shouldBe` Left "Cannot find address in quorum: 0.0.0.0:1234"
+      (initialize [T.Address "0.0.0.1" "1234"] (T.Address "0.0.0.0" "1234")) `shouldBe` Left "Cannot find address in quorum: Address {hostName = \"0.0.0.0\", port = \"1234\"}"
     it "succeeds on a single-node quorum with self" $
-      (initialize [SockAddrInet 1234 0] (SockAddrInet 1234 0))
+      (initialize [T.Address "0.0.0.0" "1234"] (T.Address "0.0.0.0" "1234"))
       `shouldBe`
-      Right (T.quorumDefault 0 (V.fromList [T.peerDefault 0 (SockAddrInet 1234 0)]))
+      Right (T.quorumDefault 0 (V.fromList [T.peerDefault 0 (T.Address "0.0.0.0" "1234")]))
 
     it "succeeds on a multi-node quorum with self" $
       (initialize
-       [SockAddrInet 1234 0, SockAddrInet 1234 1, SockAddrInet 1234 2]
-       (SockAddrInet 1234 2))
+       [T.Address "0.0.0.0" "1234", T.Address "0.0.0.1" "1234", T.Address "0.0.0.2" "1234"]
+       (T.Address "0.0.0.2" "1234"))
       `shouldBe`
-      Right (T.quorumDefault 2 (V.fromList [T.peerDefault 0 (SockAddrInet 1234 0),
-                                            T.peerDefault 1 (SockAddrInet 1234 1),
-                                            T.peerDefault 2 (SockAddrInet 1234 2)]))
+      Right (T.quorumDefault 2 (V.fromList [T.peerDefault 0 (T.Address "0.0.0.0" "1234"),
+                                            T.peerDefault 1 (T.Address "0.0.0.1" "1234"),
+                                            T.peerDefault 2 (T.Address "0.0.0.2" "1234")]))
 
     it "always sorts the quorum's peers based on hostname" $
       (initialize
-       [SockAddrInet 1234 2, SockAddrInet 1234 1, SockAddrInet 1234 0]
-       (SockAddrInet 1234 2))
+       [T.Address "0.0.0.2" "1234", T.Address "0.0.0.1" "1234", T.Address "0.0.0.0" "1234"]
+       (T.Address "0.0.0.2" "1234"))
       `shouldBe`
-      Right (T.quorumDefault 2 (V.fromList [T.peerDefault 0 (SockAddrInet 1234 0),
-                                            T.peerDefault 1 (SockAddrInet 1234 1),
-                                            T.peerDefault 2 (SockAddrInet 1234 2)]))
+      Right (T.quorumDefault 2 (V.fromList [T.peerDefault 0 (T.Address "0.0.0.0" "1234"),
+                                            T.peerDefault 1 (T.Address "0.0.0.1" "1234"),
+                                            T.peerDefault 2 (T.Address "0.0.0.2" "1234")]))
 
   describe "looking up a successor" $ do
     it "should return self in a single-host quorum" $
-      successorId (fromRight (initialize [SockAddrInet 1234 0] (SockAddrInet 1234 0))) `shouldBe` 0
+      successorId (fromRight (initialize [T.Address "0.0.0.0" "1234"] (T.Address "0.0.0.0" "1234"))) `shouldBe` 0
     it "should return correct id in a multi-host quorum" $ do
       successorId (fromRight (initialize
-                              [SockAddrInet 1234 0,
-                               SockAddrInet 1234 1,
-                               SockAddrInet 1234 2] (SockAddrInet 1234 1))) `shouldBe` 2
+                              [T.Address "0.0.0.0" "1234",
+                               T.Address "0.0.0.1" "1234",
+                               T.Address "0.0.0.2" "1234"] (T.Address "0.0.0.1" "1234"))) `shouldBe` 2
     it "should overflow when we are the last node" $ do
       successorId (fromRight (initialize
-                              [SockAddrInet 1234 0,
-                               SockAddrInet 1234 1,
-                               SockAddrInet 1234 2] (SockAddrInet 1234 2))) `shouldBe` 0
+                              [T.Address "0.0.0.0" "1234",
+                               T.Address "0.0.0.1" "1234",
+                               T.Address "0.0.0.2" "1234"] (T.Address "0.0.0.2" "1234"))) `shouldBe` 0
+
 
   describe "looking up a predecessor" $ do
     it "should return self in a single-host quorum" $
-      predecessorId (fromRight (initialize [SockAddrInet 1234 0] (SockAddrInet 1234 0))) `shouldBe` 0
+      predecessorId (fromRight (initialize [T.Address "0.0.0.0" "1234"] (T.Address "0.0.0.0" "1234"))) `shouldBe` 0
     it "should return correct id in a multi-host quorum" $ do
       predecessorId (fromRight (initialize
-                              [SockAddrInet 1234 0,
-                               SockAddrInet 1234 1,
-                               SockAddrInet 1234 2] (SockAddrInet 1234 1))) `shouldBe` 0
-    it "should overflow when we are the last node" $ do
+                              [T.Address "0.0.0.0" "1234",
+                               T.Address "0.0.0.1" "1234",
+                               T.Address "0.0.0.2" "1234"] (T.Address "0.0.0.1" "1234"))) `shouldBe` 0
+    it "should overflow when we are the first node" $ do
       predecessorId (fromRight (initialize
-                                [SockAddrInet 1234 0,
-                                 SockAddrInet 1234 1,
-                                 SockAddrInet 1234 2] (SockAddrInet 1234 0))) `shouldBe` 2
+                              [T.Address "0.0.0.0" "1234",
+                               T.Address "0.0.0.1" "1234",
+                               T.Address "0.0.0.2" "1234"] (T.Address "0.0.0.0" "1234"))) `shouldBe` 2
