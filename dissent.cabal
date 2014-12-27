@@ -58,10 +58,14 @@ library
   if flag(test)
     exposed-modules:   Dissent.Quorum,
                        Dissent.Network,
+                       Dissent.Crypto,
+                       Dissent.Crypto.Rsa,
                        Dissent.Types
   else
     other-modules:     Dissent.Quorum,
                        Dissent.Network,
+                       Dissent.Crypto,
+                       Dissent.Crypto.Rsa,
                        Dissent.Types
 
   -- And the modules below are never exported.
@@ -69,8 +73,8 @@ library
 
   build-depends:       base,
                        errors,
+                       bytestring,
 
-                       hslogger,
                        HsOpenSSL,
                        network,
                        network-simple,
@@ -83,6 +87,7 @@ test-suite dissent-test
   hs-source-dirs:      test
   main-is:             Main.hs
   build-depends:       base,
+                       bytestring,
                        hspec,
 
                        dissent,

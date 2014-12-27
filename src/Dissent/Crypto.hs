@@ -1,0 +1,13 @@
+-- | Crypto utility functions
+--
+--   High-level wrapper around the somewhat arcane HsOpenssl library. There are
+--   various alternative libraries around, but I don't trust them. I would really
+--   like to use libsodium / saltine, but the author specifically advices against
+--   using it, so I will follow that advice.
+--
+--   Furthermore, there are various other pure-haskell RSA/AES libraries around,
+--   but I don't think they have undergone the same scrutiny and peer reviews as
+--   OpenSSL has. So for now, we will wrap OpenSSL in a nice interface, and mark
+--   this as a to-do for the future. We will hard-code our preferences in this
+--   module.
+module Dissent.Crypto where

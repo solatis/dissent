@@ -1,4 +1,14 @@
--- | Main interface to Dissent
+-- | Network utility functions for Dissent
+--
+--   Since we are using quite a different aproach than regular networking, we
+--   provide a few utility functions here. Specifically, we will run a server
+--   that accepts only a single connection and then closes. Furthermore, we
+--   provide a function that attempts to connect to a remote host, possibly
+--   indefinitely, and blocks until a connection has been established.
+--
+--   The default networking functions all use callbacks, which I personally
+--   hate, so I wrote the wrappers in such a way that they do *not* use
+--   callbacks.
 module Dissent.Network where
 
 import Control.Concurrent (threadDelay)
@@ -81,20 +91,20 @@ quorumConnect' quorum retries delay =
       connectLoop :: ConnectAttempts -> IO (Either String (Socket, SockAddr))
       connectLoop (Attempts 0) = return (Left ("Unable to connect to remote"))
       connectLoop attemptsLeft =
-        handler =<< (try (connectNext) :: IO (Either IOException (Socket, SockAddr)))
 
-        where
-          handler :: Either IOException (Socket, SockAddr) -> IO (Either String (Socket, SockAddr))
-          handler (Left _) = do
-            -- This means the remote host was not (yet) available, and we should retry
-            D.log
-              ("Unable to connect to " ++ show lookupNextPeer ++ ", sleeping for " ++ show delay ++ " microseconds, attempt = " ++ show attemptsLeft)
-              (threadDelay delay)
+        let handler :: Either IOException (Socket, SockAddr) -> IO (Either String (Socket, SockAddr))
+            handler (Right result) = return (Right result)
+            handler (Left _) = do
+              -- This means the remote host was not (yet) available, and we should retry
+              D.log
+                ("Unable to connect to " ++ show lookupNextPeer ++ ", sleeping for " ++ show delay ++ " microseconds, attempt = " ++ show attemptsLeft)
+                (threadDelay delay)
 
-            case attemptsLeft of
-             Attempts i -> connectLoop (Attempts (i - 1))
-             Infinity   -> connectLoop Infinity
+              case attemptsLeft of
+               Attempts i -> connectLoop (Attempts (i - 1))
+               Infinity   -> connectLoop Infinity
 
-          handler (Right result) = return (Right result)
+
+        in handler =<< (try (connectNext) :: IO (Either IOException (Socket, SockAddr)))
 
   in connectLoop retries
