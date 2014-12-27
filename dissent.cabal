@@ -12,7 +12,8 @@ stability: experimental
 synopsis: Accountable group anonymity protocol
 build-type: Simple
 data-files: LICENSE, README.md
-cabal-version: >= 1.8
+cabal-version: >= 1.18
+tested-with: GHC == 7.8.3
 
 flag debug
   description: Enable debug support
