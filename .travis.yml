@@ -1,0 +1,10 @@
+language: haskell
+ghc:
+  - 7.8
+
+branches:
+  only:
+    - master
+
+script:
+  - cabal configure --enable-tests -f test && cabal build && cabal test
