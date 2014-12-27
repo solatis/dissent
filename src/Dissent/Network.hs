@@ -30,8 +30,20 @@ quorumAccept quorum =
   in do
     acceptedSocket <- newEmptyMVar
 
-    listen HostAny (portToServiceName (T.port localAddr)) (\(lsock, _) -> do
-                                                              accept lsock (\pair -> D.log ("Accepted connection from upstream node: " ++ show (snd pair)) (putMVar acceptedSocket pair)))
+    listen
+      HostAny
+      (portToServiceName (T.port localAddr))
+      (\(listenSock, _) -> do
+          accept
+            listenSock
+            (\pair -> do
+                -- Since we only expect a single connection attempt, it is safe
+                -- to close our listening socket at this point.
+                close listenSock
+
+                -- And put our accepted socket in our MVar which synchronizes our
+                -- blocking operation.
+                D.log ("Accepted connection from upstream node: " ++ show (snd pair)) (putMVar acceptedSocket pair)))
 
     return =<< readMVar acceptedSocket
 

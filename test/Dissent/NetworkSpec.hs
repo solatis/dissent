@@ -1,6 +1,5 @@
 module Dissent.NetworkSpec where
 
-import Network.Socket hiding (connect)
 import Network.Simple.TCP (connect)
 import Data.Either (isRight)
 
@@ -32,7 +31,6 @@ spec = do
       varAccept  <- newEmptyMVar
       varConnect <- newEmptyMVar
 
-      acceptedSocket <- newEmptyMVar
       threadId <- forkIO $ putMVar varAccept =<< N.quorumAccept quorum
 
       threadDelay 100000
@@ -40,31 +38,25 @@ spec = do
 
       -- Blocks until the var is written to
       isEmptyMVar varAccept  `shouldReturn` False
-      readMVar    varConnect `shouldReturn` 1
+      readMVar    varConnect `shouldReturn` (1 :: Integer)
 
       killThread threadId
 
   describe "connecting to another node in the quorum" $ do
     it "fails when the node is not available" $ do
 
-      let firstAddress  = T.Address "127.0.0.1" 1235
-          secondAddress = T.Address "127.0.0.1" 1236
+      let firstAddress  = T.Address "127.0.0.1" 1234
+          secondAddress = T.Address "127.0.0.1" 1235
           addresses     = [firstAddress, secondAddress]
 
-          firstQuorum   = fromRight (Q.initialize addresses firstAddress)
-          secondQuorum  = fromRight (Q.initialize addresses secondAddress)
+          quorum   = fromRight (Q.initialize addresses firstAddress)
 
-      -- varAccept    <- (newEmptyMVar :: IO (MVar Int)) -- Use this var to detect whether the socket was accepted
-
---      firstThread  <- forkIO $ N.quorumAcceptLoop  firstQuorum  (\_ -> putMVar varAccept  1)
-      result <- N.quorumConnect' secondQuorum (N.Attempts 1) 100000
+      result <- N.quorumConnect' quorum (N.Attempts 1) 100000
       result `shouldBe` Left "Unable to connect to remote"
 
---      killThread firstThread
-
     it "succeeds when the node is available" $ do
-      let firstAddress  = T.Address "127.0.0.1" 1237
-          secondAddress = T.Address "127.0.0.1" 1238
+      let firstAddress  = T.Address "127.0.0.1" 1234
+          secondAddress = T.Address "127.0.0.1" 1235
           addresses     = [firstAddress, secondAddress]
 
           firstQuorum   = fromRight (Q.initialize addresses firstAddress)
