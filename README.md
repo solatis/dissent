@@ -1,4 +1,4 @@
-dissent
+dissent [![Build Status](https://travis-ci.org/solatis/dissent.png?branch=master)](https://travis-ci.org/solatis/dissent)
 =======
  
 Haskell implementation of the Dissent accountable group anonymity protocol
