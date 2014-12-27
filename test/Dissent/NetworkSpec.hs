@@ -70,3 +70,22 @@ spec = do
       isRight (result) `shouldBe` True
 
       killThread thread
+
+
+    it "fails when trying to connect to the same node multiple times" $ do
+      let firstAddress  = T.Address "127.0.0.1" 1234
+          secondAddress = T.Address "127.0.0.1" 1235
+          addresses     = [firstAddress, secondAddress]
+
+          firstQuorum   = fromRight (Q.initialize addresses firstAddress)
+          secondQuorum  = fromRight (Q.initialize addresses secondAddress)
+
+      thread <- forkIO $ do
+                _ <- N.quorumAccept firstQuorum
+                return ()
+
+      _ <- N.quorumConnect secondQuorum
+      result <- N.quorumConnect' secondQuorum (N.Attempts 10) 100000
+      result `shouldBe` Left "Unable to connect to remote"
+
+      killThread thread
