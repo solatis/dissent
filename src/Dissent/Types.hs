@@ -3,8 +3,8 @@ module Dissent.Types where
 
 import Data.Maybe ()
 import Data.Vector
-import Network.Simple.TCP (HostName, ServiceName)
-import Network.Socket(Socket)
+import Network.Simple.TCP (HostName)
+import Network.Socket (Socket)
 
 -- | Uniquely identifies a peer within a Quorum
 type PeerId = Int
@@ -14,9 +14,8 @@ data Address = Address {
   -- | Hostname of peer
   hostName :: HostName,
 
-  -- | Port of peer, can be either a numeric respresentation or a
-  --   service name (such as "http")
-  port     :: ServiceName
+  -- | Port of peer
+  port     :: Int
 
   } deriving (Eq, Show, Ord)
 
