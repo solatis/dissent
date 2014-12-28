@@ -24,6 +24,7 @@ import qualified OpenSSL.RSA            as RSA
 import qualified OpenSSL.EVP.PKey       as PKey
 import qualified OpenSSL.EVP.Seal       as Seal
 import qualified OpenSSL.EVP.Open       as Open
+import qualified OpenSSL.PEM            as PEM
 
 import qualified Crypto.Padding         as Pad (padPKCS5,
                                                 unpadPKCS5)
@@ -73,6 +74,18 @@ paddingBytes = quot 128 8
 getCipher :: IO Cipher.Cipher
 getCipher = withOpenSSL $ do
   (return . fromJust) =<< (Cipher.getCipherByName cipherName)
+
+-- | We want to be able to represent our public key as string
+serialize :: PublicKey -> IO String
+serialize = PEM.writePublicKey
+
+-- | And we want to be able to get our string representation back as public key
+deserialize :: String -> IO PublicKey
+deserialize someKey =
+  let unsafeCast :: PKey.SomePublicKey -> PublicKey
+      unsafeCast = fromJust . PKey.toPublicKey
+
+  in (return . unsafeCast) =<< PEM.readPublicKey someKey
 
 generateKeyPair :: IO KeyPair
 generateKeyPair = withOpenSSL $

@@ -4,7 +4,8 @@ module Dissent.Types where
 import Data.Maybe ()
 import Data.Vector
 import Network.Simple.TCP (HostName)
-import Network.Socket (Socket)
+
+import Dissent.Crypto.Rsa as R (PublicKey)
 
 -- | Uniquely identifies a peer within a Quorum
 type PeerId = Int
@@ -27,8 +28,8 @@ data Peer = Peer {
   -- | Remote address of peer
   addr     :: Address,
 
-  -- | Socket which we use to communicate with the Peer
-  sock     :: Maybe Socket
+  -- | Public key of the peer
+  publicKey :: Maybe R.PublicKey
 
   } deriving (Eq, Show)
 

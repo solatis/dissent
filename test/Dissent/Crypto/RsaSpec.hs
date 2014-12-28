@@ -32,6 +32,15 @@ spec = do
       paddingBytes `shouldBe` 16
 
   describe "generating a public/private key pair" $ do
+    it "can serialize and deserialize a public key" $ do
+      pair          <- generateKeyPair
+      let publicKey = public pair
+
+      serialized    <- serialize publicKey
+      deserialized  <- deserialize (serialized)
+
+      publicKey `shouldBe` deserialized
+
     it "should be able to encrypt data" $ do
       let secret = "Hello, world!"
 
