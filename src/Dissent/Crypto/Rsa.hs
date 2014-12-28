@@ -4,12 +4,15 @@ module Dissent.Crypto.Rsa where
 import Data.Maybe (fromJust)
 import qualified Data.ByteString        as BS
 
-import OpenSSL
+import OpenSSL (withOpenSSL)
 import qualified OpenSSL.EVP.Cipher     as Cipher
 import qualified OpenSSL.RSA            as RSA
 import qualified OpenSSL.EVP.PKey       as PKey
 import qualified OpenSSL.EVP.Seal       as Seal
 import qualified OpenSSL.EVP.Open       as Open
+
+import qualified Crypto.Padding         as Pad (padPKCS5,
+                                                unpadPKCS5)
 
 import qualified Dissent.Internal.Debug as D
 
@@ -51,12 +54,16 @@ generateKeyPair = withOpenSSL $
     return (KeyPair publicKey privateKey)
 
 encrypt :: PublicKey -> BS.ByteString -> IO Encrypted
-encrypt publicKey input = withOpenSSL $ do
-  cipher <- getCipher
+encrypt publicKey input = withOpenSSL $
+  let pad :: BS.ByteString -> BS.ByteString
+      pad = Pad.padPKCS5 16
 
-  (encrypted, [encKey], inputVector) <- Seal.sealBS cipher [PKey.fromPublicKey publicKey] input
+  in do
+    cipher <- getCipher
 
-  return (Encrypted encrypted encKey inputVector)
+    (encrypted, [encKey], inputVector) <- Seal.sealBS cipher [PKey.fromPublicKey publicKey] (pad input)
+
+    return (Encrypted encrypted encKey inputVector)
 
 decrypt :: PrivateKey -> Encrypted -> IO BS.ByteString
 decrypt privateKey encrypted =
@@ -65,6 +72,9 @@ decrypt privateKey encrypted =
       inputVector = iv     encrypted
       input       = output encrypted
 
+      unpad :: BS.ByteString -> BS.ByteString
+      unpad = Pad.unpadPKCS5
+
   in do
     cipher <- getCipher
-    return (Open.openBS cipher encKey inputVector privateKey input)
+    (return . unpad) (Open.openBS cipher encKey inputVector privateKey input)

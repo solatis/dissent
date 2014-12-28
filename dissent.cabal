@@ -76,6 +76,7 @@ library
                        bytestring,
 
                        HsOpenSSL,
+                       crypto-api,
                        network,
                        network-simple,
                        vector
