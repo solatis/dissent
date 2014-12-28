@@ -2,12 +2,12 @@
 
 module Dissent.Crypto.RsaSpec where
 
-import Data.ByteString.Lazy.Char8 as BL
+import Data.ByteString as BS
 import Dissent.Crypto.Rsa
 
 import Test.Hspec
 
-recrypt :: BL.ByteString -> IO BL.ByteString
+recrypt :: BS.ByteString -> IO BS.ByteString
 recrypt secret = do
   pair      <- generateKeyPair
 
@@ -32,7 +32,7 @@ spec = do
       in test
 
     it "should be able to encrypt and decrypt empty data" $
-      let secret = BL.empty
+      let secret = BS.empty
           test   = do
             recrypted <-(recrypt secret)
             (show recrypted) `shouldBe` (show secret)

@@ -3,7 +3,6 @@ module Dissent.Crypto.Rsa where
 
 import Data.Maybe (fromJust)
 import qualified Data.ByteString        as BS
-import qualified Data.ByteString.Lazy   as LBS
 
 import OpenSSL
 import qualified OpenSSL.EVP.Cipher     as Cipher
@@ -23,7 +22,7 @@ data KeyPair = KeyPair {
   }
 
 data Encrypted = Encrypted {
-  output :: LBS.ByteString, -- ^ Output string
+  output :: BS.ByteString,  -- ^ Output string
   key    :: BS.ByteString,  -- ^ Encrypted assymetric key
   iv     :: BS.ByteString   -- ^ Input vector
   } deriving (Eq, Show)
@@ -51,16 +50,15 @@ generateKeyPair = withOpenSSL $
 
     return (KeyPair publicKey privateKey)
 
-
-encrypt :: PublicKey -> LBS.ByteString -> IO Encrypted
+encrypt :: PublicKey -> BS.ByteString -> IO Encrypted
 encrypt publicKey input = withOpenSSL $ do
   cipher <- getCipher
 
-  (encrypted, [encKey], inputVector) <- Seal.sealLBS cipher [PKey.fromPublicKey publicKey] input
+  (encrypted, [encKey], inputVector) <- Seal.sealBS cipher [PKey.fromPublicKey publicKey] input
 
   return (Encrypted encrypted encKey inputVector)
 
-decrypt :: PrivateKey -> Encrypted -> IO LBS.ByteString
+decrypt :: PrivateKey -> Encrypted -> IO BS.ByteString
 decrypt privateKey encrypted =
 
   let encKey      = key    encrypted
@@ -69,4 +67,4 @@ decrypt privateKey encrypted =
 
   in do
     cipher <- getCipher
-    return (Open.openLBS cipher encKey inputVector privateKey input)
+    return (Open.openBS cipher encKey inputVector privateKey input)
