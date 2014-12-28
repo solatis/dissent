@@ -36,8 +36,8 @@ spec = do
       pair          <- generateKeyPair
       let publicKey = public pair
 
-      serialized    <- serialize publicKey
-      deserialized  <- deserialize (serialized)
+      serialized    <- serializePublicKey publicKey
+      deserialized  <- deserializePublicKey (serialized)
 
       publicKey `shouldBe` deserialized
 

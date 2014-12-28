@@ -76,12 +76,12 @@ getCipher = withOpenSSL $ do
   (return . fromJust) =<< (Cipher.getCipherByName cipherName)
 
 -- | We want to be able to represent our public key as string
-serialize :: PublicKey -> IO String
-serialize = PEM.writePublicKey
+serializePublicKey :: PublicKey -> IO String
+serializePublicKey = PEM.writePublicKey
 
 -- | And we want to be able to get our string representation back as public key
-deserialize :: String -> IO PublicKey
-deserialize someKey =
+deserializePublicKey :: String -> IO PublicKey
+deserializePublicKey someKey =
   let unsafeCast :: PKey.SomePublicKey -> PublicKey
       unsafeCast = fromJust . PKey.toPublicKey
 
