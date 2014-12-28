@@ -2,9 +2,17 @@
 
 module Dissent.Crypto.RsaSpec where
 
+import Data.ByteString.Lazy.Char8 as BL
 import Dissent.Crypto.Rsa
 
 import Test.Hspec
+
+recrypt :: BL.ByteString -> IO BL.ByteString
+recrypt secret = do
+  pair      <- generateKeyPair
+
+  encrypted <- encrypt (public pair)  secret
+  decrypt (private pair) encrypted
 
 spec :: Spec
 spec = do
@@ -17,11 +25,16 @@ spec = do
 
       (output encrypted) `shouldSatisfy` (/= secret)
 
-    it "should be able to encrypt and decrypt data" $ do
+    it "should be able to encrypt and decrypt data" $
       let secret = "Hello, world!"
+          test   = (recrypt secret) `shouldReturn` secret
 
-      pair      <- generateKeyPair
-      encrypted <- encrypt (public pair) secret
-      decrypted <- decrypt (private pair) encrypted
+      in test
 
-      decrypted `shouldBe` secret
+    it "should be able to encrypt and decrypt empty data" $
+      let secret = BL.empty
+          test   = do
+            recrypted <-(recrypt secret)
+            (show recrypted) `shouldBe` (show secret)
+
+      in test

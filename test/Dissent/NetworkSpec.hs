@@ -33,7 +33,7 @@ spec = do
 
       threadId <- forkIO $ putMVar varAccept =<< N.quorumAccept quorum
 
-      threadDelay 100000
+      threadDelay 1000000
       connect addr (show port) (\_ -> putMVar varConnect 1)
 
       -- Blocks until the var is written to
@@ -45,18 +45,18 @@ spec = do
   describe "connecting to another node in the quorum" $ do
     it "fails when the node is not available" $ do
 
-      let firstAddress  = T.Address "127.0.0.1" 1234
-          secondAddress = T.Address "127.0.0.1" 1235
+      let firstAddress  = T.Address "127.0.0.1" 1236
+          secondAddress = T.Address "127.0.0.1" 1237
           addresses     = [firstAddress, secondAddress]
 
           quorum   = fromRight (Q.initialize addresses firstAddress)
 
-      result <- N.quorumConnect' quorum (N.Attempts 1) 100000
+      result <- N.quorumConnect' quorum (N.Attempts 1) 1000000
       result `shouldBe` Left "Unable to connect to remote"
 
     it "succeeds when the node is available" $ do
-      let firstAddress  = T.Address "127.0.0.1" 1234
-          secondAddress = T.Address "127.0.0.1" 1235
+      let firstAddress  = T.Address "127.0.0.1" 1238
+          secondAddress = T.Address "127.0.0.1" 1239
           addresses     = [firstAddress, secondAddress]
 
           firstQuorum   = fromRight (Q.initialize addresses firstAddress)
@@ -73,8 +73,8 @@ spec = do
 
 
     it "fails when trying to connect to the same node multiple times" $ do
-      let firstAddress  = T.Address "127.0.0.1" 1234
-          secondAddress = T.Address "127.0.0.1" 1235
+      let firstAddress  = T.Address "127.0.0.1" 1240
+          secondAddress = T.Address "127.0.0.1" 1241
           addresses     = [firstAddress, secondAddress]
 
           firstQuorum   = fromRight (Q.initialize addresses firstAddress)

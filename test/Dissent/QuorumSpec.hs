@@ -1,6 +1,5 @@
 module Dissent.QuorumSpec where
 
-import Network.Socket (SockAddr (SockAddrInet) )
 import Dissent.Quorum (initialize, predecessorId, successorId)
 
 import qualified Dissent.Types as T
