@@ -58,13 +58,11 @@ library
   if flag(test)
     exposed-modules:   Dissent.Quorum,
                        Dissent.Network,
-                       Dissent.Crypto,
                        Dissent.Crypto.Rsa,
                        Dissent.Types
   else
     other-modules:     Dissent.Quorum,
                        Dissent.Network,
-                       Dissent.Crypto,
                        Dissent.Crypto.Rsa,
                        Dissent.Types
 

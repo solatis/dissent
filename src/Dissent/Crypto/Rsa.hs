@@ -1,4 +1,18 @@
 -- | RSA crypto utility functions
+--
+--   High-level wrapper around the somewhat arcane HsOpenssl library. There are
+--   various alternative libraries around, but I don't trust them. I would really
+--   like to use libsodium / saltine, but the author specifically advices against
+--   using it, so I will follow that advice.
+--
+--   Furthermore, there are various other pure-haskell RSA/AES libraries around,
+--   but I don't think they have undergone the same scrutiny and peer reviews as
+--   OpenSSL has. So for now, we will wrap OpenSSL in a nice interface, and mark
+--   this as a to-do for the future. We will hard-code our preferences in this
+--   module.
+--
+--   The implementation of this module, and usage of the HsOpenSSL API, will need
+--   proper peer review.
 module Dissent.Crypto.Rsa where
 
 import Data.Maybe (fromJust)
@@ -30,10 +44,35 @@ data Encrypted = Encrypted {
   iv     :: BS.ByteString   -- ^ Input vector
   } deriving (Eq, Show)
 
+-- Our cipher key length
+cipherBits :: Int
+cipherBits = 256
+
+allCiphers :: IO [String]
+allCiphers = withOpenSSL $ Cipher.getCipherNames
+
+cipherName :: String
+cipherName = "AES-" ++ show cipherBits ++ "-CBC"
+
+-- When we are using a cypher in block mode, we need to ensure we are using a
+-- proper padding, otherwise an attacker can determine the message length of
+-- the last block.
+--
+-- It is tempting to think that paddingBytes = cypherBits / 8, but the
+-- cypher bits is the *key* length, not the block length. AES uses
+-- a fixed block length, according to Wikipedia:
+--
+-- "AES is a variant of Rijndael which has a fixed block size of 128
+--  bits"
+--
+--  http://en.wikipedia.org/wiki/Advanced_Encryption_Standard
+paddingBytes :: Int
+paddingBytes = quot 128 8
+
 -- | We will be using AES as Cipher for our RSA encryption
 getCipher :: IO Cipher.Cipher
 getCipher = withOpenSSL $ do
-  (return . fromJust) =<< (Cipher.getCipherByName "AES-256-CBC")
+  (return . fromJust) =<< (Cipher.getCipherByName cipherName)
 
 generateKeyPair :: IO KeyPair
 generateKeyPair = withOpenSSL $
@@ -55,8 +94,10 @@ generateKeyPair = withOpenSSL $
 
 encrypt :: PublicKey -> BS.ByteString -> IO Encrypted
 encrypt publicKey input = withOpenSSL $
+      -- AES-CBC requires us to pad the input message if the messages are/can be
+      -- of variable length.
   let pad :: BS.ByteString -> BS.ByteString
-      pad = Pad.padPKCS5 16
+      pad = Pad.padPKCS5 paddingBytes
 
   in do
     cipher <- getCipher

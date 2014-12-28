@@ -2,7 +2,8 @@
 
 module Dissent.Crypto.RsaSpec where
 
-import Data.ByteString as BS
+import Data.ByteString as BS hiding (putStrLn,
+                                     elem)
 import Dissent.Crypto.Rsa
 
 import Test.Hspec
@@ -16,6 +17,20 @@ recrypt secret = do
 
 spec :: Spec
 spec = do
+  describe "our encryption cipher" $ do
+    it "uses a 256 bit block cipher" $
+      cipherBits `shouldBe` 256
+
+    it "uses AES-256-CBC" $
+      cipherName `shouldBe` "AES-256-CBC"
+
+    it "is supported by our OS" $ do
+      ciphers <- allCiphers
+      elem cipherName ciphers `shouldBe` True
+
+    it "uses 16 bytes padding" $
+      paddingBytes `shouldBe` 16
+
   describe "generating a public/private key pair" $ do
     it "should be able to encrypt data" $ do
       let secret = "Hello, world!"
