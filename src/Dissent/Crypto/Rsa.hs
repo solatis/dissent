@@ -36,7 +36,7 @@ getCipher = withOpenSSL $ do
 generateKeyPair :: IO KeyPair
 generateKeyPair = withOpenSSL $
       -- Use a large key size / exponent
-  let keySize          = 2048
+  let keySize          = 4096
       keyExponent      = 65537
 
       generateRsaKey   = RSA.generateRSAKey' keySize keyExponent
@@ -57,6 +57,7 @@ encrypt publicKey input = withOpenSSL $ do
   cipher <- getCipher
 
   (encrypted, [encKey], inputVector) <- Seal.sealLBS cipher [PKey.fromPublicKey publicKey] input
+
   return (Encrypted encrypted encKey inputVector)
 
 decrypt :: PrivateKey -> Encrypted -> IO LBS.ByteString
