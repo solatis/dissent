@@ -78,8 +78,8 @@ connectSocket host port =
 --   the amount of connections you wish to accept.
 --
 --   This is a blocking operation.
-quorumAccept :: T.Quorum                -- ^ The Quorum we need to start accepting connections from
-             -> Int                     -- ^ How many connections do we accept ?
+quorumAccept :: T.Quorum                      -- ^ The Quorum we need to start accepting connections from
+             -> Int                           -- ^ How many connections do we accept ?
              -> IO [(NS.Socket, NS.SockAddr)] -- ^ The sockets we accepted
 quorumAccept quorum num =
 

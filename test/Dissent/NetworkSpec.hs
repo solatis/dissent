@@ -20,6 +20,7 @@ fromRight e =
 spec :: Spec
 spec = do
   describe "launching the quorum accept loop" $ do
+
     it "listens on the correct address" $ do
 
       let addr   = "127.0.0.1"
@@ -35,6 +36,33 @@ spec = do
 
       threadDelay 100000
       socket <- N.connectSocket "127.0.0.1" 1234
+
+      putStrLn "Connected to socket.."
+
+      -- Blocks until the var is written to
+      socket       `shouldSatisfy` isRight
+
+      killThread threadId
+
+
+    it "also accepts ipv6 connections" $ do
+
+      -- Notice how our own address is "127.0.0.1" ..
+      let addr   = "127.0.0.1"
+          port   = 1235
+          quorum = fromRight (Q.initialize [U.addressStub "0.0.0.0" port, U.addressStub addr port, U.addressStub "0.0.0.1" port] (U.addressStub addr port))
+
+      threadId <- forkIO $ do
+        socket <- N.quorumAcceptOne quorum
+        putStrLn ("Accepted socket: " ++ show socket)
+        return ()
+
+      putStrLn "Created quorum that accepts connections.."
+
+      threadDelay 100000
+
+      -- .. but we connect to ::1
+      socket <- N.connectSocket "::1" 1235
 
       putStrLn "Connected to socket.."
 
