@@ -2,11 +2,11 @@
 module Dissent.Util where
 
 import System.IO.Unsafe (unsafePerformIO)
-import Network.Simple.TCP (HostName)
+import Network.Socket (HostName, PortNumber)
 import qualified Dissent.Types      as T
 import qualified Dissent.Crypto.Rsa as R
 
-addressStub :: HostName -> Int -> T.Address
+addressStub :: HostName -> PortNumber -> T.Address
 addressStub h p =
   let serializedPkey = unlines ["-----BEGIN PUBLIC KEY-----",
                                 "MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEArcrRDTxwvdhrgGDFd9zn",

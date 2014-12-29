@@ -1,12 +1,10 @@
 module Dissent.NetworkSpec where
 
-import Network.Simple.TCP (connect)
 import Data.Either (isRight)
 
 import Control.Concurrent (forkIO,
                            killThread,
                            threadDelay)
-import Control.Concurrent.MVar
 
 import qualified Dissent.Quorum  as Q(initialize)
 import qualified Dissent.Network as N
@@ -28,17 +26,20 @@ spec = do
           port   = 1234
           quorum = fromRight (Q.initialize [U.addressStub "0.0.0.0" port, U.addressStub addr port, U.addressStub "0.0.0.1" port] (U.addressStub addr port))
 
-      varAccept  <- newEmptyMVar
-      varConnect <- newEmptyMVar
+      threadId <- forkIO $ do
+        socket <- N.quorumAcceptOne quorum
+        putStrLn ("Accepted socket: " ++ show socket)
+        return ()
 
-      threadId <- forkIO $ putMVar varAccept =<< N.quorumAccept quorum
+      putStrLn "Created quorum that accepts connections.."
 
-      threadDelay 1000000
-      connect addr (show port) (\_ -> putMVar varConnect 1)
+      threadDelay 100000
+      socket <- N.connectSocket "127.0.0.1" 1234
+
+      putStrLn "Connected to socket.."
 
       -- Blocks until the var is written to
-      isEmptyMVar varAccept  `shouldReturn` False
-      readMVar    varConnect `shouldReturn` (1 :: Integer)
+      socket       `shouldSatisfy` isRight
 
       killThread threadId
 
@@ -63,7 +64,7 @@ spec = do
           secondQuorum  = fromRight (Q.initialize addresses secondAddress)
 
       thread <- forkIO $ do
-                _ <- N.quorumAccept firstQuorum
+                _ <- N.quorumAcceptOne firstQuorum
                 return ()
       result <- N.quorumConnect secondQuorum
 
@@ -81,7 +82,7 @@ spec = do
           secondQuorum  = fromRight (Q.initialize addresses secondAddress)
 
       thread <- forkIO $ do
-                _ <- N.quorumAccept firstQuorum
+                _ <- N.quorumAcceptOne firstQuorum
                 return ()
 
       _ <- N.quorumConnect secondQuorum

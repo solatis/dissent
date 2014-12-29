@@ -65,7 +65,6 @@ library
                        HsOpenSSL,
                        crypto-api,
                        network,
-                       network-simple,
                        vector
 
 test-suite dissent-test
@@ -81,7 +80,6 @@ test-suite dissent-test
 
                        dissent,
                        network,
-                       network-simple,
                        vector
 
 benchmark dissent-benchmark-crypto

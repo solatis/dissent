@@ -3,7 +3,7 @@ module Dissent.Types where
 
 import Data.Maybe ()
 import Data.Vector
-import Network.Simple.TCP (HostName)
+import Network
 
 import Dissent.Crypto.Rsa as R (PublicKey)
 
@@ -12,11 +12,12 @@ type PeerId = Int
 
 -- | Hostname, Port and RSA public key
 data Address = Address {
-  -- | Hostname of peer (can be ipv4 or ipv6)
+  -- | Hostname of peer. This can be a "real" hostname, or a IPv4/IPv6
+  --   address.
   hostName :: HostName,
 
   -- | Port of peer
-  port     :: Int,
+  port     :: PortNumber,
 
   -- | Public key of the peer
   publicKey :: R.PublicKey
