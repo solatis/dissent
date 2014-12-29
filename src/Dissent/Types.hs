@@ -42,11 +42,19 @@ data Quorum = Quorum {
   -- | PeerId of ourselves
   selfId      :: PeerId,
 
+  -- | PeerId of our leader
+  leaderId    :: PeerId,
+
   -- | All the peers in the quorum, including ourselves
   peers       :: Vector Peer
 
   } deriving (Eq, Show)
 
--- | Default constructor for a Quorum
-quorumDefault :: PeerId -> Vector Peer -> Quorum
-quorumDefault quorumSelfId quorumPeers = Quorum quorumSelfId quorumPeers
+-- | Default constructor for a Quorum, with our leader being
+--   the first node in the quorum.
+quorumDefault :: PeerId      -- ^ Who are we ?
+              -> Vector Peer -- ^ All peers in Quorum
+              -> Quorum      -- ^ Resulting quorum
+quorumDefault quorumSelfId quorumPeers =
+  let quorumLeaderId = 0
+  in  Quorum quorumSelfId quorumLeaderId quorumPeers

@@ -11,30 +11,37 @@ initialize :: [T.Address]              -- ^ Addresses of all nodes in quorum (in
            -> T.Address                -- ^ Who are we?
            -> Either String T.Quorum  -- ^ Resulting Quorum, or error message
 initialize addresses self =
-  constructQuorum (constructPeers 0 (sort addresses))
+  let constructQuorum peers =
+        fmap (\selfId -> T.quorumDefault selfId peers) (lookupPeerId self peers)
 
-  where
-    constructQuorum peers =
-      fmap (\selfId -> T.quorumDefault selfId peers) (lookupPeerId self peers)
+      constructPeers :: T.PeerId -> [T.Address] -> V.Vector T.Peer
+      constructPeers _ [] = V.empty
+      constructPeers offset (x:xs) =
+        V.cons (T.peerDefault offset x) (constructPeers (offset + 1) xs)
 
-    constructPeers :: T.PeerId -> [T.Address] -> V.Vector T.Peer
-    constructPeers _ [] = V.empty
-    constructPeers offset (x:xs) =
-      V.cons (T.peerDefault offset x) (constructPeers (offset + 1) xs)
+      lookupPeerId address peers =
+        let isAddr peer = T.addr peer == address
+            handleError = note ("Cannot find address in quorum: " ++ show address)
+        in  handleError (V.findIndex isAddr peers)
 
-    lookupPeerId address peers =
-      let isAddr peer = T.addr peer == address
-          handleError = note ("Cannot find address in quorum: " ++ show address)
-      in  handleError (V.findIndex isAddr peers)
+  in constructQuorum (constructPeers 0 (sort addresses))
 
 -- | Retrieves Peer from Quorum based on PeerId, crashes when peer not found
 lookupPeer :: T.Quorum -> T.PeerId -> T.Peer
-lookupPeer quorum peerId =
-  V.unsafeIndex (T.peers quorum) peerId
+lookupPeer quorum =
+  V.unsafeIndex (T.peers quorum)
 
 -- | Retrieves our own Peer object from the Quorum
 lookupSelfPeer :: T.Quorum -> T.Peer
-lookupSelfPeer quorum = lookupPeer quorum (T.selfId quorum)
+lookupSelfPeer quorum =
+  let selfId = T.selfId quorum
+  in  lookupPeer quorum selfId
+
+-- | Retrieves the Peer object of the Leader of the Quorum
+lookupLeaderPeer :: T.Quorum -> T.Peer
+lookupLeaderPeer quorum =
+  let selfId = T.leaderId quorum
+  in  lookupPeer quorum selfId
 
 -- | Returns the PeerId of our successor (who we have to connect to)
 successorId :: T.Quorum -> T.PeerId

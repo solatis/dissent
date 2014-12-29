@@ -48,11 +48,11 @@ library
   if flag(debug)
     cpp-options: -DDEBUG
 
-  -- We always expose our main 'Dissent' module, which re-exports submodules
   exposed-modules:     Dissent,
                        Dissent.Quorum,
                        Dissent.Network,
                        Dissent.Crypto.Rsa,
+                       Dissent.Protocol.Shuffle,
                        Dissent.Types
 
   -- And the modules below are never exported.
