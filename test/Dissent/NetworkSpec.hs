@@ -10,7 +10,7 @@ import Control.Concurrent.MVar
 
 import qualified Dissent.Quorum  as Q(initialize)
 import qualified Dissent.Network as N
-import qualified Dissent.Types   as T
+import qualified Dissent.Util    as U
 
 import Test.Hspec
 
@@ -26,7 +26,7 @@ spec = do
 
       let addr   = "127.0.0.1"
           port   = 1234
-          quorum = fromRight (Q.initialize [T.Address "0.0.0.0" port, T.Address addr port, T.Address "0.0.0.1" port] (T.Address addr port))
+          quorum = fromRight (Q.initialize [U.addressStub "0.0.0.0" port, U.addressStub addr port, U.addressStub "0.0.0.1" port] (U.addressStub addr port))
 
       varAccept  <- newEmptyMVar
       varConnect <- newEmptyMVar
@@ -45,8 +45,8 @@ spec = do
   describe "connecting to another node in the quorum" $ do
     it "fails when the node is not available" $ do
 
-      let firstAddress  = T.Address "127.0.0.1" 1236
-          secondAddress = T.Address "127.0.0.1" 1237
+      let firstAddress  = U.addressStub "127.0.0.1" 1236
+          secondAddress = U.addressStub "127.0.0.1" 1237
           addresses     = [firstAddress, secondAddress]
 
           quorum   = fromRight (Q.initialize addresses firstAddress)
@@ -55,8 +55,8 @@ spec = do
       result `shouldBe` Left "Unable to connect to remote"
 
     it "succeeds when the node is available" $ do
-      let firstAddress  = T.Address "127.0.0.1" 1238
-          secondAddress = T.Address "127.0.0.1" 1239
+      let firstAddress  = U.addressStub "127.0.0.1" 1238
+          secondAddress = U.addressStub "127.0.0.1" 1239
           addresses     = [firstAddress, secondAddress]
 
           firstQuorum   = fromRight (Q.initialize addresses firstAddress)
@@ -73,8 +73,8 @@ spec = do
 
 
     it "fails when trying to connect to the same node multiple times" $ do
-      let firstAddress  = T.Address "127.0.0.1" 1240
-          secondAddress = T.Address "127.0.0.1" 1241
+      let firstAddress  = U.addressStub "127.0.0.1" 1240
+          secondAddress = U.addressStub "127.0.0.1" 1241
           addresses     = [firstAddress, secondAddress]
 
           firstQuorum   = fromRight (Q.initialize addresses firstAddress)

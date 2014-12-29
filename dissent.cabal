@@ -49,19 +49,8 @@ library
     cpp-options: -DDEBUG
 
   -- We always expose our main 'Dissent' module, which re-exports submodules
-  exposed-modules:     Dissent
-
-  -- This is a bit of a hack, but since our test suite is a separate executable,
-  -- and we might want to test some hidden functions/modules, we allow the user
-  -- to provide a -flag test to cabal configure to either enable or disable a
-  -- full export of all testable modules.
-  if flag(test)
-    exposed-modules:   Dissent.Quorum,
-                       Dissent.Network,
-                       Dissent.Crypto.Rsa,
-                       Dissent.Types
-  else
-    other-modules:     Dissent.Quorum,
+  exposed-modules:     Dissent,
+                       Dissent.Quorum,
                        Dissent.Network,
                        Dissent.Crypto.Rsa,
                        Dissent.Types

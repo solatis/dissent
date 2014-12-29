@@ -10,13 +10,16 @@ import Dissent.Crypto.Rsa as R (PublicKey)
 -- | Uniquely identifies a peer within a Quorum
 type PeerId = Int
 
--- | Hostname and Port, either IPv4 or IPv6
+-- | Hostname, Port and RSA public key
 data Address = Address {
-  -- | Hostname of peer
+  -- | Hostname of peer (can be ipv4 or ipv6)
   hostName :: HostName,
 
   -- | Port of peer
-  port     :: Int
+  port     :: Int,
+
+  -- | Public key of the peer
+  publicKey :: R.PublicKey
 
   } deriving (Eq, Show, Ord)
 
@@ -26,16 +29,13 @@ data Peer = Peer {
   id       :: PeerId,
 
   -- | Remote address of peer
-  addr     :: Address,
-
-  -- | Public key of the peer
-  publicKey :: Maybe R.PublicKey
+  addr     :: Address
 
   } deriving (Eq, Show)
 
 -- | Default constructor for a Peer
 peerDefault :: PeerId -> Address -> Peer
-peerDefault peerId peerAddr = Peer peerId peerAddr Nothing
+peerDefault peerId peerAddr = Peer peerId peerAddr
 
 -- | Describes all remotes we are connected to
 data Quorum = Quorum {
