@@ -50,7 +50,8 @@ library
 
   exposed-modules:     Dissent,
                        Dissent.Quorum,
-                       Dissent.Network,
+                       Dissent.Network.Socket,
+                       Dissent.Network.Quorum,
                        Dissent.Crypto.Rsa,
                        Dissent.Protocol.Shuffle,
                        Dissent.Types

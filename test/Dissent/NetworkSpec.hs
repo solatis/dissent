@@ -9,9 +9,10 @@ import Control.Monad.Trans.Resource ( runResourceT
 import Control.Monad.IO.Class (liftIO)
 
 
-import qualified Dissent.Quorum  as Q(initialize)
-import qualified Dissent.Network as N
-import qualified Dissent.Util    as U
+import qualified Dissent.Quorum         as Q(initialize)
+import qualified Dissent.Network.Socket as NS
+import qualified Dissent.Network.Quorum as NQ
+import qualified Dissent.Util           as U
 
 import Test.Hspec
 
@@ -31,14 +32,14 @@ spec = do
           quorum = fromRight (Q.initialize [U.addressStub "0.0.0.0" port, U.addressStub addr port, U.addressStub "0.0.0.1" port] (U.addressStub addr port))
 
       _ <- resourceForkIO $ do
-        socket <- N.quorumAcceptOne quorum
+        socket <- NQ.acceptOne quorum
         liftIO $ putStrLn ("Accepted socket: " ++ show socket)
 
       liftIO $ do
          putStrLn "Created quorum that accepts connections.."
          threadDelay 100000
 
-      socket <- N.connectSocket "127.0.0.1" 1234
+      socket <- NS.connect "127.0.0.1" 1234
 
       liftIO $ do
         putStrLn "Connected to socket.."
@@ -52,7 +53,7 @@ spec = do
           quorum = fromRight (Q.initialize [U.addressStub "0.0.0.0" port, U.addressStub addr port, U.addressStub "0.0.0.1" port] (U.addressStub addr port))
 
       _ <- resourceForkIO $ do
-        socket <- N.quorumAcceptOne quorum
+        socket <- NQ.acceptOne quorum
         liftIO $ putStrLn ("Accepted socket: " ++ show socket)
 
       liftIO $ do
@@ -60,7 +61,7 @@ spec = do
         threadDelay 100000
 
       -- .. but we connect to ::1
-      socket <- N.connectSocket "::1" 1235
+      socket <- NS.connect "::1" 1235
 
       liftIO $ do
         putStrLn "Connected to socket.."
@@ -75,7 +76,7 @@ spec = do
 
           quorum   = fromRight (Q.initialize addresses firstAddress)
 
-      result <- N.quorumConnect' quorum (N.Attempts 1) 1000000
+      result <- NQ.connect' quorum (NQ.Attempts 1) 1000000
       liftIO $ (result `shouldBe` Left "Unable to connect to remote")
 
     it "succeeds when the node is available" $ runResourceT $ do
@@ -87,10 +88,10 @@ spec = do
           secondQuorum  = fromRight (Q.initialize addresses secondAddress)
 
       _ <- resourceForkIO $ do
-        socket <- N.quorumAcceptOne firstQuorum
+        socket <- NQ.acceptOne firstQuorum
         liftIO $ putStrLn ("Accepted socket: " ++ show socket)
 
-      result <- N.quorumConnect secondQuorum
+      result <- NQ.connect secondQuorum
 
       liftIO $ do
         isRight (result) `shouldBe` True
