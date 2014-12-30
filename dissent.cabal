@@ -60,11 +60,14 @@ library
 
   build-depends:       base,
                        errors,
-                       bytestring,
+                       bytestring,                       
 
                        HsOpenSSL,
                        crypto-api,
                        network,
+                       resourcet,
+                       transformers,
+                       lifted-base,
                        vector
 
 test-suite dissent-test
@@ -80,6 +83,9 @@ test-suite dissent-test
 
                        dissent,
                        network,
+                       resourcet,
+                       transformers,
+                       lifted-base,
                        vector
 
 benchmark dissent-benchmark-crypto
