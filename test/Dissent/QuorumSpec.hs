@@ -9,11 +9,6 @@ import qualified Data.Vector   as V
 import qualified Dissent.Util  as U
 import Test.Hspec
 
-fromRight :: Either a b -> b
-fromRight e =
-  case e of
-   Right r -> r
-
 spec :: Spec
 spec = do
   describe "initializing a quorum" $ do
@@ -46,28 +41,28 @@ spec = do
 
   describe "looking up a successor" $ do
     it "should return self in a single-host quorum" $
-      successorId (fromRight (initialize [U.remoteStub "0.0.0.0" 1234] (U.remoteStub "0.0.0.0" 1234))) `shouldBe` 0
+      successorId (U.fromRight (initialize [U.remoteStub "0.0.0.0" 1234] (U.remoteStub "0.0.0.0" 1234))) `shouldBe` 0
     it "should return correct id in a multi-host quorum" $ do
-      successorId (fromRight (initialize
+      successorId (U.fromRight (initialize
                               [U.remoteStub "0.0.0.0" 1234,
                                U.remoteStub "0.0.0.1" 1234,
                                U.remoteStub "0.0.0.2" 1234] (U.remoteStub "0.0.0.1" 1234))) `shouldBe` 2
     it "should overflow when we are the last node" $ do
-      successorId (fromRight (initialize
+      successorId (U.fromRight (initialize
                               [U.remoteStub "0.0.0.0" 1234,
                                U.remoteStub "0.0.0.1" 1234,
                                U.remoteStub "0.0.0.2" 1234] (U.remoteStub "0.0.0.2" 1234))) `shouldBe` 0
 
   describe "looking up a predecessor" $ do
     it "should return self in a single-host quorum" $
-      predecessorId (fromRight (initialize [U.remoteStub "0.0.0.0" 1234] (U.remoteStub "0.0.0.0" 1234))) `shouldBe` 0
+      predecessorId (U.fromRight (initialize [U.remoteStub "0.0.0.0" 1234] (U.remoteStub "0.0.0.0" 1234))) `shouldBe` 0
     it "should return correct id in a multi-host quorum" $ do
-      predecessorId (fromRight (initialize
+      predecessorId (U.fromRight (initialize
                               [U.remoteStub "0.0.0.0" 1234,
                                U.remoteStub "0.0.0.1" 1234,
                                U.remoteStub "0.0.0.2" 1234] (U.remoteStub "0.0.0.1" 1234))) `shouldBe` 0
     it "should overflow when we are the first node" $ do
-      predecessorId (fromRight (initialize
+      predecessorId (U.fromRight (initialize
                               [U.remoteStub "0.0.0.0" 1234,
                                U.remoteStub "0.0.0.1" 1234,
                                U.remoteStub "0.0.0.2" 1234] (U.remoteStub "0.0.0.0" 1234))) `shouldBe` 2

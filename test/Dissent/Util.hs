@@ -6,6 +6,11 @@ import Network.Socket (HostName, PortNumber)
 import qualified Dissent.Types      as T
 import qualified Dissent.Crypto.Rsa as R
 
+
+fromRight :: Either a b -> b
+fromRight (Right r) = r
+fromRight (Left  _) = error ("Not a right!")
+
 remoteStub :: HostName -> PortNumber -> T.Remote
 remoteStub h p =
   let serializedPkey = unlines ["-----BEGIN PUBLIC KEY-----",
