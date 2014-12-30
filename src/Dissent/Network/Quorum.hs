@@ -63,15 +63,18 @@ data ConnectAttempts
 
 -- | Connects to another node; based on PeerType provided, resolves the correct node
 --   to connect to.
-connect :: T.Quorum         -- ^ The Quorum we need to lookup our downstream peer from
-        -> T.PeerType       -- ^ Role of the peer we are connecting to
+connect :: T.Quorum        -- ^ The Quorum we need to lookup our downstream peer from
+        -> T.PeerType      -- ^ Role of the peer we are connecting to
         -> ConnectAttempts -- ^ The amount of times we retry to connect
         -> ResourceT IO (Either String (NS.Socket, NS.SockAddr))
 connect quorum peerType connectAttempts =
   let delay      = 100000
 
       lookupPeer :: T.Remote
-      lookupPeer = T.addr (Q.lookupPeer quorum (Q.successorId quorum))
+      lookupPeer =
+        case peerType of
+         T.Leader -> T.addr (Q.lookupLeaderPeer quorum)
+         T.Slave  -> T.addr (Q.lookupPeer quorum (Q.successorId quorum))
 
       connectLoop :: ConnectAttempts -> ResourceT IO (Either String (NS.Socket, NS.SockAddr))
       connectLoop (Attempts 0) = return (Left ("Unable to connect to remote"))
