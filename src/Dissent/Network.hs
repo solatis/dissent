@@ -143,7 +143,6 @@ quorumConnect' quorum retries delay =
                Attempts i -> connectLoop (Attempts (i - 1))
                Infinity   -> connectLoop Infinity
 
-
         in handler =<< (connectSocket (T.hostName lookupNextPeer) (T.port lookupNextPeer))
 
   in connectLoop retries
