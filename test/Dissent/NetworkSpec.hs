@@ -62,7 +62,7 @@ spec = do
         putStrLn "Connected to socket.."
         socket `shouldSatisfy` isRight
 
-  describe "connecting to another node in the quorum" $ do
+  describe "connecting to a slave node in the quorum" $ do
     it "fails when the node is not available" $ runResourceT $ do
 
       let firstAddress  = U.remoteStub "127.0.0.1" 1236
@@ -71,12 +71,29 @@ spec = do
 
           quorum   = U.fromRight (Q.initialize addresses firstAddress)
 
-      result <- NQ.connect quorum T.Slave (NQ.Attempts 1)
+      result <- NQ.connect quorum T.Slave (NQ.Attempts 10)
       liftIO $ (result `shouldBe` Left "Unable to connect to remote")
 
-    it "succeeds when the node is available" $ runResourceT $ do
+    it "fails when the leader but not the slave is available" $ runResourceT $ do
       let firstAddress  = U.remoteStub "127.0.0.1" 1238
           secondAddress = U.remoteStub "127.0.0.1" 1239
+          addresses     = [firstAddress, secondAddress]
+
+          firstQuorum   = U.fromRight (Q.initialize addresses firstAddress)
+          secondQuorum  = U.fromRight (Q.initialize addresses secondAddress)
+
+      _ <- resourceForkIO $ do
+        [socket] <- NQ.accept firstQuorum T.Leader
+        liftIO $ putStrLn ("Accepted socket: " ++ show socket)
+
+      result <- NQ.connect secondQuorum T.Slave (NQ.Attempts 10)
+
+      liftIO $
+        result `shouldBe` Left "Unable to connect to remote"
+
+    it "succeeds when the slave but not the leader is available" $ runResourceT $ do
+      let firstAddress  = U.remoteStub "127.0.0.1" 1240
+          secondAddress = U.remoteStub "127.0.0.1" 1241
           addresses     = [firstAddress, secondAddress]
 
           firstQuorum   = U.fromRight (Q.initialize addresses firstAddress)
@@ -87,6 +104,94 @@ spec = do
         liftIO $ putStrLn ("Accepted socket: " ++ show socket)
 
       result <- NQ.connect secondQuorum T.Slave (NQ.Infinity)
+
+      liftIO $ do
+        isRight (result) `shouldBe` True
+
+    it "succeeds when the slave and the leader are available" $ runResourceT $ do
+      let firstAddress  = U.remoteStub "127.0.0.1" 1242
+          secondAddress = U.remoteStub "127.0.0.1" 1243
+          addresses     = [firstAddress, secondAddress]
+
+          firstQuorum   = U.fromRight (Q.initialize addresses firstAddress)
+          secondQuorum  = U.fromRight (Q.initialize addresses secondAddress)
+
+      _ <- resourceForkIO $ do
+        [socket] <- NQ.accept firstQuorum T.Leader
+        liftIO $ putStrLn ("Leader accepted socket: " ++ show socket)
+
+      _ <- resourceForkIO $ do
+        [socket] <- NQ.accept firstQuorum T.Slave
+        liftIO $ putStrLn ("Slave accepted socket: " ++ show socket)
+
+      result <- NQ.connect secondQuorum T.Slave (NQ.Infinity)
+
+      liftIO $ do
+        isRight (result) `shouldBe` True
+
+  describe "connecting to a leader node in the quorum" $ do
+    it "fails when the node is not available" $ runResourceT $ do
+
+      let firstAddress  = U.remoteStub "127.0.0.1" 1244
+          secondAddress = U.remoteStub "127.0.0.1" 1245
+          addresses     = [firstAddress, secondAddress]
+
+          quorum   = U.fromRight (Q.initialize addresses firstAddress)
+
+      result <- NQ.connect quorum T.Leader (NQ.Attempts 10)
+      liftIO $ (result `shouldBe` Left "Unable to connect to remote")
+
+    it "fails when the slave but not the leader is available" $ runResourceT $ do
+      let firstAddress  = U.remoteStub "127.0.0.1" 1246
+          secondAddress = U.remoteStub "127.0.0.1" 1247
+          addresses     = [firstAddress, secondAddress]
+
+          firstQuorum   = U.fromRight (Q.initialize addresses firstAddress)
+          secondQuorum  = U.fromRight (Q.initialize addresses secondAddress)
+
+      _ <- resourceForkIO $ do
+        [socket] <- NQ.accept firstQuorum T.Slave
+        liftIO $ putStrLn ("Accepted socket: " ++ show socket)
+
+      result <- NQ.connect secondQuorum T.Leader (NQ.Attempts 10)
+
+      liftIO $
+        result `shouldBe` Left "Unable to connect to remote"
+
+    it "succeeds when the leader but not the slave is available" $ runResourceT $ do
+      let firstAddress  = U.remoteStub "127.0.0.1" 1248
+          secondAddress = U.remoteStub "127.0.0.1" 1249
+          addresses     = [firstAddress, secondAddress]
+
+          firstQuorum   = U.fromRight (Q.initialize addresses firstAddress)
+          secondQuorum  = U.fromRight (Q.initialize addresses secondAddress)
+
+      _ <- resourceForkIO $ do
+        [socket] <- NQ.accept firstQuorum T.Leader
+        liftIO $ putStrLn ("Accepted socket: " ++ show socket)
+
+      result <- NQ.connect secondQuorum T.Leader (NQ.Infinity)
+
+      liftIO $ do
+        isRight (result) `shouldBe` True
+
+    it "succeeds when the leader and the slave are available" $ runResourceT $ do
+      let firstAddress  = U.remoteStub "127.0.0.1" 1250
+          secondAddress = U.remoteStub "127.0.0.1" 1251
+          addresses     = [firstAddress, secondAddress]
+
+          firstQuorum   = U.fromRight (Q.initialize addresses firstAddress)
+          secondQuorum  = U.fromRight (Q.initialize addresses secondAddress)
+
+      _ <- resourceForkIO $ do
+        [socket] <- NQ.accept firstQuorum T.Leader
+        liftIO $ putStrLn ("Leader accepted socket: " ++ show socket)
+
+      _ <- resourceForkIO $ do
+        [socket] <- NQ.accept firstQuorum T.Slave
+        liftIO $ putStrLn ("Slave accepted socket: " ++ show socket)
+
+      result <- NQ.connect secondQuorum T.Leader (NQ.Infinity)
 
       liftIO $ do
         isRight (result) `shouldBe` True
