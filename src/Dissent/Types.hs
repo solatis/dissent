@@ -1,11 +1,11 @@
 -- |Different types used within Dissent
 module Dissent.Types where
 
-import Data.Maybe ()
-import Data.Vector
-import Network
+import           Data.Maybe         ()
+import           Data.Vector
+import           Network
 
-import Dissent.Crypto.Rsa as R (PublicKey)
+import           Dissent.Crypto.Rsa as R (PublicKey)
 
 -- | Uniquely identifies a peer within a Quorum
 type PeerId = Int
@@ -14,23 +14,26 @@ type PeerId = Int
 data Remote = Remote {
   -- | Hostname of peer. This can be a "real" hostname, or a IPv4/IPv6
   --   address.
-  hostName :: HostName,
+  hostName  :: HostName,
 
   -- | Port the peer listens at
-  port     :: PortNumber,
+  port      :: PortNumber,
 
   -- | Public key of the peer
   publicKey :: R.PublicKey
 
   } deriving (Eq, Show, Ord)
 
+-- The type of Peer we are (a Leader or a Slave)
+data PeerType = Leader | Slave
+
 -- | Information about a remote peer within our Quorum
 data Peer = Peer {
   -- | Offset of peer in quorum
-  id       :: PeerId,
+  id   :: PeerId,
 
   -- | Remote address of peer
-  addr     :: Remote
+  addr :: Remote
 
   } deriving (Eq, Show)
 
@@ -41,13 +44,13 @@ peerDefault peerId peerAddr = Peer peerId peerAddr
 -- | Describes all remotes we are connected to
 data Quorum = Quorum {
   -- | PeerId of ourselves
-  selfId      :: PeerId,
+  selfId   :: PeerId,
 
   -- | PeerId of our leader
-  leaderId    :: PeerId,
+  leaderId :: PeerId,
 
   -- | All the peers in the quorum, including ourselves
-  peers       :: Vector Peer
+  peers    :: Vector Peer
 
   } deriving (Eq, Show)
 

@@ -50,6 +50,18 @@ successorId quorum =
       quorumSize = V.length (T.peers quorum)
   in  (selfId + 1) `mod` quorumSize
 
+-- | Determines the Peer type based on a peer's id
+peerType :: T.Quorum -> T.PeerId -> T.PeerType
+peerType quorum peerId =
+  let peer   = lookupPeer quorum peerId
+      leader = lookupLeaderPeer quorum
+
+  in if (peer == leader) then (T.Leader) else (T.Slave)
+
+-- | Determines the Peer type of ourselves
+selfPeerType :: T.Quorum -> T.PeerType
+selfPeerType quorum = peerType (quorum) (T.selfId quorum)
+
 -- | Returns the PeerId of our predecessor (who connects to us)
 predecessorId :: T.Quorum -> T.PeerId
 predecessorId quorum =

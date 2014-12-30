@@ -1,20 +1,20 @@
 module Dissent.NetworkSpec where
 
-import Data.Either (isRight)
+import           Data.Either                  (isRight)
 
-import Control.Concurrent (threadDelay)
+import           Control.Concurrent           (threadDelay)
 
-import Control.Monad.Trans.Resource ( runResourceT
-                                    , resourceForkIO)
-import Control.Monad.IO.Class (liftIO)
+import           Control.Monad.IO.Class       (liftIO)
+import           Control.Monad.Trans.Resource (resourceForkIO, runResourceT)
 
 
-import qualified Dissent.Quorum         as Q(initialize)
-import qualified Dissent.Network.Socket as NS
-import qualified Dissent.Network.Quorum as NQ
-import qualified Dissent.Util           as U
+import qualified Dissent.Network.Quorum       as NQ
+import qualified Dissent.Network.Socket       as NS
+import qualified Dissent.Quorum               as Q (initialize)
+import qualified Dissent.Types                as T
+import qualified Dissent.Util                 as U
 
-import Test.Hspec
+import           Test.Hspec
 
 spec :: Spec
 spec = do
@@ -27,7 +27,7 @@ spec = do
           quorum = U.fromRight (Q.initialize [U.remoteStub "0.0.0.0" port, U.remoteStub addr port, U.remoteStub "0.0.0.1" port] (U.remoteStub addr port))
 
       _ <- resourceForkIO $ do
-        socket <- NQ.acceptOne quorum
+        [socket] <- NQ.accept quorum T.Slave
         liftIO $ putStrLn ("Accepted socket: " ++ show socket)
 
       liftIO $ do
@@ -48,7 +48,7 @@ spec = do
           quorum = U.fromRight (Q.initialize [U.remoteStub "0.0.0.0" port, U.remoteStub addr port, U.remoteStub "0.0.0.1" port] (U.remoteStub addr port))
 
       _ <- resourceForkIO $ do
-        socket <- NQ.acceptOne quorum
+        [socket] <- NQ.accept quorum T.Slave
         liftIO $ putStrLn ("Accepted socket: " ++ show socket)
 
       liftIO $ do
@@ -71,7 +71,7 @@ spec = do
 
           quorum   = U.fromRight (Q.initialize addresses firstAddress)
 
-      result <- NQ.connect' quorum (NQ.Attempts 1) 1000000
+      result <- NQ.connect quorum T.Slave (NQ.Attempts 1)
       liftIO $ (result `shouldBe` Left "Unable to connect to remote")
 
     it "succeeds when the node is available" $ runResourceT $ do
@@ -83,10 +83,10 @@ spec = do
           secondQuorum  = U.fromRight (Q.initialize addresses secondAddress)
 
       _ <- resourceForkIO $ do
-        socket <- NQ.acceptOne firstQuorum
+        [socket] <- NQ.accept firstQuorum T.Slave
         liftIO $ putStrLn ("Accepted socket: " ++ show socket)
 
-      result <- NQ.connect secondQuorum
+      result <- NQ.connect secondQuorum T.Slave (NQ.Infinity)
 
       liftIO $ do
         isRight (result) `shouldBe` True
