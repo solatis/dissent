@@ -1,4 +1,4 @@
-module Dissent.NetworkSpec where
+module Dissent.Network.QuorumSpec where
 
 import           Data.Either                  (isRight)
 
