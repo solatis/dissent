@@ -13,7 +13,7 @@ import Control.Exception (IOException)
 import Control.Exception.Lifted (try)
 
 import Control.Monad.Trans.Resource
-import Control.Monad.Trans.Class (lift)
+import Control.Monad.IO.Class (liftIO)
 
 import qualified Network.Socket               as NS
 
@@ -38,8 +38,9 @@ listenSocket port =
 
   in do
     socket  <- createSocket NS.AF_INET6
-    lift $ NS.bind   socket addr
-    lift $ NS.listen socket 5
+    liftIO $ do
+      NS.bind   socket addr
+      NS.listen socket 5
 
     D.log ("Now listening on socket: " ++ show socket) (return (socket))
 
@@ -47,7 +48,7 @@ listenSocket port =
 acceptConnection :: NS.Socket                             -- ^ Server socket to accept connections from.
                                                           --   This socket must be already bound using listenSocket.
                  -> ResourceT IO (NS.Socket, NS.SockAddr) -- ^ Our accepted connection
-acceptConnection = lift . NS.accept
+acceptConnection = liftIO . NS.accept
 
 -- | Utility function that allows us to connect to a remote host, and returns an
 --   Either if there is a connection failure.
@@ -68,12 +69,12 @@ connectSocket host port =
 
       connect :: ResourceT IO (NS.Socket, NS.SockAddr)
       connect = do
-        info   <- lift $ addrInfo
+        info   <- liftIO $ addrInfo
         socket <- createSocket (NS.addrFamily info)
 
         let addr = sockAddr info
 
-        D.log ("Now connecting to socket at address: " ++ show addr) (lift $ NS.connect socket addr)
+        D.log ("Now connecting to socket at address: " ++ show addr) (liftIO $ NS.connect socket addr)
 
         return (socket, addr)
 
@@ -137,7 +138,7 @@ quorumConnect' quorum retries delay =
               -- This means the remote host was not (yet) available, and we should retry
               D.log
                 ("Unable to connect to " ++ show lookupNextPeer ++ ", sleeping for " ++ show delay ++ " microseconds, attempt = " ++ show attemptsLeft)
-                (lift $ threadDelay delay)
+                (liftIO $ threadDelay delay)
 
               case attemptsLeft of
                Attempts i -> connectLoop (Attempts (i - 1))
