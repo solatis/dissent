@@ -6,8 +6,8 @@ import Network.Socket (HostName, PortNumber)
 import qualified Dissent.Types      as T
 import qualified Dissent.Crypto.Rsa as R
 
-addressStub :: HostName -> PortNumber -> T.Address
-addressStub h p =
+remoteStub :: HostName -> PortNumber -> T.Remote
+remoteStub h p =
   let serializedPkey = unlines ["-----BEGIN PUBLIC KEY-----",
                                 "MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEArcrRDTxwvdhrgGDFd9zn",
                                 "gmBC/t1/FI+EfHtxjSUk0p7UhqnI/wGHekaYuykAUEMxb7FC0K4Gl9EQvHlHHUlC",
@@ -24,4 +24,4 @@ addressStub h p =
                                 "-----END PUBLIC KEY-----"]
       generateKey = unsafePerformIO $ R.deserializePublicKey (serializedPkey)
 
-  in T.Address h p generateKey
+  in T.Remote h p generateKey

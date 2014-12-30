@@ -7,14 +7,14 @@ import qualified Data.Vector as V
 import qualified Dissent.Types as T
 
 -- | Initialize our Quorum description
-initialize :: [T.Address]              -- ^ Addresses of all nodes in quorum (including ourselves, order is irrelevant)
-           -> T.Address                -- ^ Who are we?
+initialize :: [T.Remote]              -- ^ Addresses of all nodes in quorum (including ourselves, order is irrelevant)
+           -> T.Remote                -- ^ Who are we?
            -> Either String T.Quorum  -- ^ Resulting Quorum, or error message
 initialize addresses self =
   let constructQuorum peers =
         fmap (\selfId -> T.quorumDefault selfId peers) (lookupPeerId self peers)
 
-      constructPeers :: T.PeerId -> [T.Address] -> V.Vector T.Peer
+      constructPeers :: T.PeerId -> [T.Remote] -> V.Vector T.Peer
       constructPeers _ [] = V.empty
       constructPeers offset (x:xs) =
         V.cons (T.peerDefault offset x) (constructPeers (offset + 1) xs)

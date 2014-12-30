@@ -11,12 +11,12 @@ import Dissent.Crypto.Rsa as R (PublicKey)
 type PeerId = Int
 
 -- | Hostname, Port and RSA public key
-data Address = Address {
+data Remote = Remote {
   -- | Hostname of peer. This can be a "real" hostname, or a IPv4/IPv6
   --   address.
   hostName :: HostName,
 
-  -- | Port of peer
+  -- | Port the peer listens at
   port     :: PortNumber,
 
   -- | Public key of the peer
@@ -30,12 +30,12 @@ data Peer = Peer {
   id       :: PeerId,
 
   -- | Remote address of peer
-  addr     :: Address
+  addr     :: Remote
 
   } deriving (Eq, Show)
 
 -- | Default constructor for a Peer
-peerDefault :: PeerId -> Address -> Peer
+peerDefault :: PeerId -> Remote -> Peer
 peerDefault peerId peerAddr = Peer peerId peerAddr
 
 -- | Describes all remotes we are connected to

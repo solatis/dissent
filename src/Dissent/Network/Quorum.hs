@@ -25,7 +25,7 @@ accept :: T.Quorum                                -- ^ The Quorum we need to sta
 accept quorum num =
 
       -- This function helps us determine the socket address other nodes knows us by
-  let localAddr :: T.Address
+  let localAddr :: T.Remote
       localAddr = T.addr (Q.lookupSelfPeer quorum)
 
   in do
@@ -58,7 +58,7 @@ connect' :: T.Quorum        -- ^ The Quorum we need to lookup our downstream pee
          -> Int             -- ^ The delay (in microseconds) between retries
          -> ResourceT IO (Either String (NS.Socket, NS.SockAddr))
 connect' quorum retries delay =
-  let lookupNextPeer :: T.Address
+  let lookupNextPeer :: T.Remote
       lookupNextPeer = T.addr (Q.lookupPeer quorum (Q.successorId quorum))
 
       connectLoop :: ConnectAttempts -> ResourceT IO (Either String (NS.Socket, NS.SockAddr))

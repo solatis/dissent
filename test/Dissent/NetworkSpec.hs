@@ -29,7 +29,7 @@ spec = do
 
       let addr   = "127.0.0.1"
           port   = 1234
-          quorum = fromRight (Q.initialize [U.addressStub "0.0.0.0" port, U.addressStub addr port, U.addressStub "0.0.0.1" port] (U.addressStub addr port))
+          quorum = fromRight (Q.initialize [U.remoteStub "0.0.0.0" port, U.remoteStub addr port, U.remoteStub "0.0.0.1" port] (U.remoteStub addr port))
 
       _ <- resourceForkIO $ do
         socket <- NQ.acceptOne quorum
@@ -50,7 +50,7 @@ spec = do
       -- Notice how our own address is "127.0.0.1" ..
       let addr   = "127.0.0.1"
           port   = 1235
-          quorum = fromRight (Q.initialize [U.addressStub "0.0.0.0" port, U.addressStub addr port, U.addressStub "0.0.0.1" port] (U.addressStub addr port))
+          quorum = fromRight (Q.initialize [U.remoteStub "0.0.0.0" port, U.remoteStub addr port, U.remoteStub "0.0.0.1" port] (U.remoteStub addr port))
 
       _ <- resourceForkIO $ do
         socket <- NQ.acceptOne quorum
@@ -70,8 +70,8 @@ spec = do
   describe "connecting to another node in the quorum" $ do
     it "fails when the node is not available" $ runResourceT $ do
 
-      let firstAddress  = U.addressStub "127.0.0.1" 1236
-          secondAddress = U.addressStub "127.0.0.1" 1237
+      let firstAddress  = U.remoteStub "127.0.0.1" 1236
+          secondAddress = U.remoteStub "127.0.0.1" 1237
           addresses     = [firstAddress, secondAddress]
 
           quorum   = fromRight (Q.initialize addresses firstAddress)
@@ -80,8 +80,8 @@ spec = do
       liftIO $ (result `shouldBe` Left "Unable to connect to remote")
 
     it "succeeds when the node is available" $ runResourceT $ do
-      let firstAddress  = U.addressStub "127.0.0.1" 1238
-          secondAddress = U.addressStub "127.0.0.1" 1239
+      let firstAddress  = U.remoteStub "127.0.0.1" 1238
+          secondAddress = U.remoteStub "127.0.0.1" 1239
           addresses     = [firstAddress, secondAddress]
 
           firstQuorum   = fromRight (Q.initialize addresses firstAddress)
