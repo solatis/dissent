@@ -22,7 +22,7 @@ import qualified Dissent.Types                as T
 --   as both a leader and a slave, and it is useful to be able to distinguish
 --   the connections.
 port :: T.Remote -> T.PeerType -> NS.PortNumber
-port addr T.Leader = (T.port addr) + 1
+port addr T.Leader = (T.port addr) + 1000
 port addr T.Slave  = T.port addr
 
 -- | Determines what host/port to start accepting connections on, accepts
