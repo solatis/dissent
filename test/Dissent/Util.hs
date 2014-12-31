@@ -1,11 +1,10 @@
 -- | Helper functions for Dissent test cases
 module Dissent.Util where
 
-import System.IO.Unsafe (unsafePerformIO)
-import Network.Socket (HostName, PortNumber)
-import qualified Dissent.Types      as T
 import qualified Dissent.Crypto.Rsa as R
-
+import qualified Dissent.Types      as T
+import           Network.Socket     (HostName, PortNumber)
+import           System.IO.Unsafe   (unsafePerformIO)
 
 fromRight :: Either a b -> b
 fromRight (Right r) = r
