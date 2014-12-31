@@ -54,6 +54,8 @@ library
                        Dissent.Network.Quorum,
                        Dissent.Crypto.Rsa,
                        Dissent.Protocol.Shuffle,
+                       Dissent.Protocol.Shuffle.Leader,
+                       Dissent.Protocol.Shuffle.Slave,
                        Dissent.Types
 
   -- And the modules below are never exported.
@@ -66,6 +68,7 @@ library
                        HsOpenSSL,
                        crypto-api,
                        network,
+                       async,
                        resourcet,
                        transformers,
                        lifted-base,
@@ -84,6 +87,7 @@ test-suite dissent-test
 
                        dissent,
                        network,
+                       async,
                        resourcet,
                        transformers,
                        lifted-base,

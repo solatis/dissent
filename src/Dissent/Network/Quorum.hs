@@ -73,8 +73,8 @@ connect quorum peerType connectAttempts =
       lookupPeer :: T.Remote
       lookupPeer =
         case peerType of
-         T.Leader -> T.addr (Q.lookupLeaderPeer quorum)
-         T.Slave  -> T.addr (Q.lookupPeer quorum (Q.successorId quorum))
+         T.Leader -> T.addr (Q.lookupLeaderPeer    quorum)
+         T.Slave  -> T.addr (Q.lookupSuccessorPeer quorum)
 
       connectLoop :: ConnectAttempts -> ResourceT IO (Either String (NS.Socket, NS.SockAddr))
       connectLoop (Attempts 0) = return (Left ("Unable to connect to remote"))

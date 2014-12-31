@@ -37,6 +37,28 @@ data Peer = Peer {
 
   } deriving (Eq, Show)
 
+-- | A connection with a Leader or a Slave. In essence associates
+--   a peer with a Socket.
+data RemoteConnection = RemoteConnection {
+  -- | The Remote we are connected to
+  peer   :: Peer,
+
+  -- | The actual connection
+  socket :: Socket
+  }
+
+-- | The connections a Slave establishes with all the other nodes.
+data RemoteConnections = RemoteConnections {
+  -- | Connection to the leader
+  leader      :: RemoteConnection,
+
+  -- | Connection to the predecessor
+  predecessor :: RemoteConnection,
+
+  -- | Connection to the successor
+  successor   :: RemoteConnection
+  }
+
 -- | Default constructor for a Peer
 peerDefault :: PeerId -> Remote -> Peer
 peerDefault peerId peerAddr = Peer peerId peerAddr
