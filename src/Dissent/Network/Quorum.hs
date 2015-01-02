@@ -39,7 +39,7 @@ accept quorum peerType =
 
       -- This function helps us determine the socket address other nodes knows us by
   let localAddr    :: T.Remote
-      localAddr    = T.addr (Q.lookupSelfPeer quorum)
+      localAddr    = T.remote (Q.lookupSelfPeer quorum)
 
       -- The amount of connections we will accept. The leader will accept connections
       -- from all nodes in the quorum (including itself), while a slave only accepts
@@ -76,8 +76,8 @@ connect quorum peerType connectAttempts =
       lookupPeer :: T.Remote
       lookupPeer =
         case peerType of
-         T.Leader -> T.addr (Q.lookupLeaderPeer    quorum)
-         T.Slave  -> T.addr (Q.lookupSuccessorPeer quorum)
+         T.Leader -> T.remote (Q.lookupLeaderPeer    quorum)
+         T.Slave  -> T.remote (Q.lookupSuccessorPeer quorum)
 
       connectLoop :: ConnectAttempts -> ResourceT IO (Either String (NS.Socket, NS.SockAddr))
       connectLoop (Attempts 0) = return (Left ("Unable to connect to remote"))

@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveGeneric #-}
+
 -- | RSA crypto utility functions
 --
 --   High-level wrapper around the somewhat arcane HsOpenssl library. There are
@@ -15,19 +17,22 @@
 --   proper peer review.
 module Dissent.Crypto.Rsa where
 
-import Data.Maybe (fromJust)
-import qualified Data.ByteString        as BS
+import           GHC.Generics           (Generic)
 
-import OpenSSL (withOpenSSL)
+import qualified Data.Binary            as B
+import qualified Data.ByteString        as BS
+import           Data.Maybe             (fromJust)
+
+import           OpenSSL                (withOpenSSL)
 import qualified OpenSSL.EVP.Cipher     as Cipher
-import qualified OpenSSL.RSA            as RSA
+import qualified OpenSSL.EVP.Open       as Open
 import qualified OpenSSL.EVP.PKey       as PKey
 import qualified OpenSSL.EVP.Seal       as Seal
-import qualified OpenSSL.EVP.Open       as Open
 import qualified OpenSSL.PEM            as PEM
+import qualified OpenSSL.RSA            as RSA
 
-import qualified Crypto.Padding         as Pad (padPKCS5,
-                                                unpadPKCS5)
+
+import qualified Crypto.Padding         as Pad (padPKCS5, unpadPKCS5)
 
 import qualified Dissent.Internal.Debug as D
 
@@ -43,7 +48,9 @@ data Encrypted = Encrypted {
   output :: BS.ByteString,  -- ^ Output string
   key    :: BS.ByteString,  -- ^ Encrypted assymetric key
   iv     :: BS.ByteString   -- ^ Input vector
-  } deriving (Eq, Show)
+  } deriving (Eq, Show, Generic)
+
+instance B.Binary Encrypted
 
 -- Our cipher key length
 cipherBits :: Int

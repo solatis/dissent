@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 -- | Network utility functions for Dissent
 --
 --   Since we are using quite a different aproach than regular networking, we
@@ -8,15 +10,20 @@
 
 module Dissent.Network.Socket where
 
-import Control.Exception (IOException)
-import Control.Exception.Lifted (try)
+import qualified Data.Binary                    as B
+import qualified Data.ByteString.Lazy           as BSL
+import           Data.Either                    ()
 
-import Control.Monad.Trans.Resource
-import Control.Monad.IO.Class (liftIO)
+import           Control.Exception              (IOException)
+import           Control.Exception.Lifted       (try)
 
-import qualified Network.Socket               as NS
+import           Control.Monad.IO.Class         (liftIO)
+import           Control.Monad.Trans.Resource
 
-import qualified Dissent.Internal.Debug       as D
+import qualified Network.Socket                 as NS
+import qualified Network.Socket.ByteString.Lazy as NSBL
+
+import qualified Dissent.Internal.Debug         as D
 
 create :: NS.Family -> ResourceT IO NS.Socket
 create family = do
@@ -75,3 +82,46 @@ connect host port =
         return (socket, addr)
 
   in try connect'
+
+
+-- | Serializes object and puts the whole message on the socket. Depending upon
+--   the size of the object, might block.
+encodeAndSend :: B.Binary a => NS.Socket -> a -> IO ()
+encodeAndSend socket msg =
+  let encoded :: BSL.ByteString
+      encoded = B.encode msg
+
+  in NSBL.sendAll socket encoded
+
+-- | "Converts" a socket to a lazy bytestring. Useful when consuming / decoding
+--   multiple objects and we want to keep state.
+socketAsLBS :: NS.Socket -> IO BSL.ByteString
+socketAsLBS = NSBL.getContents
+
+-- | Wrapper around receiveLBSAndDecode, and assumes that exactly 1 object has
+--   been put on the wire. Useful in scenario's where a completely synchronous,
+--   unpipelined protocol is used.
+receiveAndDecode :: B.Binary a => NS.Socket -> IO (Either String a)
+receiveAndDecode socket = do
+  lbs <- NSBL.getContents socket
+
+  -- It is important to note that it is here where we completely discard any
+  -- unconsumed data.
+  return (fmap
+            (\ (_, obj) -> obj)
+            (receiveLBSAndDecode lbs))
+
+-- | Attempts to retrieve message from socket and deserializes it into the
+--   desired object.
+--
+--   Returns either an error, or a tuple with our unconsumed ByteString and
+--   deserialized object.
+receiveLBSAndDecode :: B.Binary a => BSL.ByteString -> Either String (BSL.ByteString, a)
+receiveLBSAndDecode =
+  let decode         = B.decodeOrFail
+      handle decoded =
+        case decoded of
+         Left  (_,          _, msg) -> Left msg
+         Right (unconsumed, _, obj) -> Right (unconsumed, obj)
+
+  in handle . decode

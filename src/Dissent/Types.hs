@@ -14,13 +14,16 @@ type PeerId = Int
 data Remote = Remote {
   -- | Hostname of peer. This can be a "real" hostname, or a IPv4/IPv6
   --   address.
-  hostName  :: HostName,
+  hostName      :: HostName,
 
   -- | Port the peer listens at
-  port      :: PortNumber,
+  port          :: PortNumber,
 
-  -- | Public key of the peer
-  publicKey :: R.PublicKey
+  -- | Public key of the peer used for signing
+  signingKey    :: R.PublicKey,
+
+  -- | Public key of the peer used for encryption
+  encryptionKey :: R.PublicKey
 
   } deriving (Eq, Show, Ord)
 
@@ -30,10 +33,10 @@ data PeerType = Leader | Slave
 -- | Information about a remote peer within our Quorum
 data Peer = Peer {
   -- | Offset of peer in quorum
-  id   :: PeerId,
+  id     :: PeerId,
 
   -- | Remote address of peer
-  addr :: Remote
+  remote :: Remote
 
   } deriving (Eq, Show)
 

@@ -1,19 +1,26 @@
 module Dissent.Protocol.Shuffle.Slave where
 
+import qualified Data.ByteString              as BS
+import qualified Data.Vector                  as V
+
 import           Control.Concurrent
 import           Control.Monad.IO.Class       (liftIO)
 import           Control.Monad.Trans.Resource
 
-import qualified Dissent.Network.Quorum       as NQ
-import qualified Dissent.Quorum               as Q
-import qualified Dissent.Types                as T
 import qualified Network.Socket               as NS
 
+import qualified Dissent.Crypto.Rsa           as R
 import qualified Dissent.Internal.Util        as U
+import qualified Dissent.Network.Quorum       as NQ
+import qualified Dissent.Network.Socket       as NS
+import qualified Dissent.Quorum               as Q
+import qualified Dissent.Types                as T
 
-run :: T.Quorum -> IO ()
-run quorum = runResourceT $ do
-  _ <- phase1 quorum
+run :: T.Quorum -> BS.ByteString -> IO ()
+run quorum message = runResourceT $ do
+  connections <- phase1 quorum
+  _ <- phase2 quorum connections message
+
   return ()
 
 -- | Phase 1 for slaves, which does three things:
@@ -58,3 +65,36 @@ phase1 quorum =
     [predecessorSock] <- liftIO $ readMVar predecessorMutex
 
     return (remoteConnections leaderSock predecessorSock successorSock)
+
+-- | Implements the data submission phase as described in the paper.
+phase2 :: T.Quorum                         -- ^ The Quorum we operate on
+       -> T.RemoteConnections              -- ^ The sockets we accepted
+       -> BS.ByteString                    -- ^ The message we want to send
+       -> ResourceT IO ()
+phase2 quorum connections datum =
+
+      -- Single encryption pass. Encrypts a datum according to a list of nodes.
+      -- Returns an array of tuples with the source datum text and the encrypted
+      -- representation.
+  let encrypt :: [R.PublicKey] -> BS.ByteString -> IO [(BS.ByteString, R.Encrypted)]
+      encrypt []     _     = return ([])
+      encrypt (x:xs) msg = do
+          encrypted <- R.encrypt x msg
+          rest      <- encrypt xs (R.output encrypted)
+
+          return ((msg, encrypted) : rest)
+
+      runEncrypt resolver = encrypt (V.toList (V.map resolver (T.peers quorum)))
+
+  in liftIO $ do
+    -- First calculate the prime, which is based on the signing key
+    c' <- runEncrypt (T.signingKey . T.remote) datum
+
+    -- Now calculate the cipher, which is based on the encryption key, and
+    -- uses the final prime as input.
+    c  <- runEncrypt (T.signingKey . T.remote) (R.output (snd (last c')))
+
+    -- Send our encrypted data to the leader.
+    NS.encodeAndSend (T.socket (T.leader connections)) (snd (last c))
+
+    return ()

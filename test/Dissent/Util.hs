@@ -29,4 +29,4 @@ remoteStub h p =
                                 "-----END PUBLIC KEY-----"]
       generateKey = unsafePerformIO $ R.deserializePublicKey (serializedPkey)
 
-  in T.Remote h p generateKey
+  in T.Remote h p generateKey generateKey

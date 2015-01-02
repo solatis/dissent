@@ -66,6 +66,7 @@ library
   build-depends:       base,
                        errors,
                        bytestring,                       
+                       binary,
 
                        HsOpenSSL == 0.11,
                        crypto-api,

@@ -20,9 +20,9 @@ initialize addresses self =
         V.cons (T.peerDefault offset x) (constructPeers (offset + 1) xs)
 
       lookupPeerId address peers =
-        let isAddr peer = T.addr peer == address
+        let isRemote peer = T.remote peer == address
             handleError = note ("Cannot find address in quorum: " ++ show address)
-        in  handleError (V.findIndex isAddr peers)
+        in  handleError (V.findIndex isRemote peers)
 
   in constructQuorum (constructPeers 0 (sort addresses))
 
