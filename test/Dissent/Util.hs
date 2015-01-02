@@ -1,27 +1,15 @@
 -- | Helper functions for Dissent test cases
 module Dissent.Util where
 
-import           Control.Concurrent
-import           Control.Monad.IO.Class       (liftIO)
-import           Control.Monad.Trans.Resource
-import qualified Dissent.Crypto.Rsa           as R
-import qualified Dissent.Types                as T
-import           Network.Socket               (HostName, PortNumber)
-import           System.IO.Unsafe             (unsafePerformIO)
+import qualified Dissent.Crypto.Rsa as R
+import qualified Dissent.Types      as T
+import           Network.Socket     (HostName, PortNumber)
+import           System.IO.Unsafe   (unsafePerformIO)
 
 
 fromRight :: Either a b -> b
 fromRight (Right r) = r
 fromRight (Left  _) = error ("Not a right!")
-
-forkResource :: ResourceT IO a -> ResourceT IO (MVar a)
-forkResource handler = do
-  sync <- liftIO $ newEmptyMVar
-  _ <- resourceForkIO $ do
-    res <- handler
-    liftIO $ putMVar sync res
-
-  return (sync)
 
 remoteStub :: HostName -> PortNumber -> T.Remote
 remoteStub h p =

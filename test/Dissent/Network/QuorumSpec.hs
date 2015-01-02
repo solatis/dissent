@@ -7,6 +7,7 @@ import           Control.Concurrent           (threadDelay)
 import           Control.Monad.IO.Class       (liftIO)
 import           Control.Monad.Trans.Resource (runResourceT)
 
+import qualified Dissent.Internal.Util        as U
 import qualified Dissent.Network.Quorum       as NQ
 import qualified Dissent.Network.Socket       as NS
 import qualified Dissent.Quorum               as Q (initialize)

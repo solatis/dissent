@@ -9,6 +9,8 @@ import qualified Dissent.Quorum               as Q
 import qualified Dissent.Types                as T
 import qualified Network.Socket               as NS
 
+import qualified Dissent.Internal.Util        as U
+
 run :: T.Quorum -> IO ()
 run quorum = runResourceT $ do
   _ <- phase1 quorum
@@ -21,16 +23,9 @@ run quorum = runResourceT $ do
 phase1 :: T.Quorum                         -- ^ The Quorum we operate on
        -> ResourceT IO T.RemoteConnections -- ^ The Sockets we accepted
 phase1 quorum =
-  let acceptPredecessor = do
-        mutex <- liftIO (newEmptyMVar)
-        _ <- resourceForkIO $ do
-          [socket] <- NQ.accept quorum T.Slave
-          liftIO $ putMVar mutex socket
-
-        return (mutex)
-
-      connectSuccessor = NQ.connect quorum T.Slave  NQ.Infinity
-      connectLeader    = NQ.connect quorum T.Leader NQ.Infinity
+  let acceptPredecessor = U.forkResource (NQ.accept quorum T.Slave)
+      connectSuccessor  = NQ.connect quorum T.Slave  NQ.Infinity
+      connectLeader     = NQ.connect quorum T.Leader NQ.Infinity
 
       -- | Constructs a RemoteConnections object out of the objects we have got
       --   after establishing connections with our remotes.
@@ -60,6 +55,6 @@ phase1 quorum =
     successorSock <- connectSuccessor
 
     -- Wait until our predecessor has connected
-    predecessorSock <- liftIO $ readMVar predecessorMutex
+    [predecessorSock] <- liftIO $ readMVar predecessorMutex
 
     return (remoteConnections leaderSock predecessorSock successorSock)

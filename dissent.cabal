@@ -52,14 +52,16 @@ library
                        Dissent.Quorum,
                        Dissent.Network.Socket,
                        Dissent.Network.Quorum,
+
                        Dissent.Crypto.Rsa,
+
                        Dissent.Protocol.Shuffle,
                        Dissent.Protocol.Shuffle.Leader,
                        Dissent.Protocol.Shuffle.Slave,
-                       Dissent.Types
+                       Dissent.Types,
 
-  -- And the modules below are never exported.
-  other-modules:       Dissent.Internal.Debug
+                       Dissent.Internal.Debug,
+                       Dissent.Internal.Util
 
   build-depends:       base,
                        errors,

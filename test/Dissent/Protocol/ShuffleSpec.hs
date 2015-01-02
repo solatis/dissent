@@ -1,7 +1,5 @@
 module Dissent.Protocol.ShuffleSpec where
 
-import           Data.Either                     (isRight)
-
 import           Control.Concurrent.MVar         (readMVar)
 
 import           Control.Monad.IO.Class          (liftIO)
@@ -10,10 +8,8 @@ import           Control.Monad.Trans.Resource    (runResourceT)
 import qualified Dissent.Protocol.Shuffle.Leader as PSL
 import qualified Dissent.Protocol.Shuffle.Slave  as PSS
 
-import qualified Dissent.Network.Quorum          as NQ
-import qualified Dissent.Network.Socket          as NS
-import qualified Dissent.Quorum                  as Q (initialize,
-                                                       lookupLeaderPeer)
+import qualified Dissent.Internal.Util           as U
+import qualified Dissent.Quorum                  as Q (initialize)
 import qualified Dissent.Types                   as T
 import qualified Dissent.Util                    as U
 
