@@ -5,8 +5,7 @@ import           Data.Either                  (isRight)
 import           Control.Concurrent           (threadDelay)
 
 import           Control.Monad.IO.Class       (liftIO)
-import           Control.Monad.Trans.Resource (resourceForkIO, runResourceT)
-
+import           Control.Monad.Trans.Resource (runResourceT)
 
 import qualified Dissent.Network.Quorum       as NQ
 import qualified Dissent.Network.Socket       as NS
@@ -26,7 +25,7 @@ spec = do
           port   = 1234
           quorum = U.fromRight (Q.initialize [U.remoteStub "0.0.0.0" port, U.remoteStub addr port, U.remoteStub "0.0.0.1" port] (U.remoteStub addr port))
 
-      _ <- resourceForkIO $ do
+      _ <- U.forkResource $ do
         [socket] <- NQ.accept quorum T.Slave
         liftIO $ putStrLn ("Accepted socket: " ++ show socket)
 
@@ -47,7 +46,7 @@ spec = do
           port   = 1235
           quorum = U.fromRight (Q.initialize [U.remoteStub "0.0.0.0" port, U.remoteStub addr port, U.remoteStub "0.0.0.1" port] (U.remoteStub addr port))
 
-      _ <- resourceForkIO $ do
+      _ <- U.forkResource $ do
         [socket] <- NQ.accept quorum T.Slave
         liftIO $ putStrLn ("Accepted socket: " ++ show socket)
 
@@ -82,7 +81,7 @@ spec = do
           firstQuorum   = U.fromRight (Q.initialize addresses firstAddress)
           secondQuorum  = U.fromRight (Q.initialize addresses secondAddress)
 
-      _ <- resourceForkIO $ do
+      _ <- U.forkResource $ do
         [socket] <- NQ.accept firstQuorum T.Leader
         liftIO $ putStrLn ("Accepted socket: " ++ show socket)
 
@@ -99,7 +98,7 @@ spec = do
           firstQuorum   = U.fromRight (Q.initialize addresses firstAddress)
           secondQuorum  = U.fromRight (Q.initialize addresses secondAddress)
 
-      _ <- resourceForkIO $ do
+      _ <- U.forkResource $ do
         [socket] <- NQ.accept firstQuorum T.Slave
         liftIO $ putStrLn ("Accepted socket: " ++ show socket)
 
@@ -116,11 +115,11 @@ spec = do
           firstQuorum   = U.fromRight (Q.initialize addresses firstAddress)
           secondQuorum  = U.fromRight (Q.initialize addresses secondAddress)
 
-      _ <- resourceForkIO $ do
+      _ <- U.forkResource $ do
         [socket] <- NQ.accept firstQuorum T.Leader
         liftIO $ putStrLn ("Leader accepted socket: " ++ show socket)
 
-      _ <- resourceForkIO $ do
+      _ <- U.forkResource $ do
         [socket] <- NQ.accept firstQuorum T.Slave
         liftIO $ putStrLn ("Slave accepted socket: " ++ show socket)
 
@@ -149,7 +148,7 @@ spec = do
           firstQuorum   = U.fromRight (Q.initialize addresses firstAddress)
           secondQuorum  = U.fromRight (Q.initialize addresses secondAddress)
 
-      _ <- resourceForkIO $ do
+      _ <- U.forkResource $ do
         [socket] <- NQ.accept firstQuorum T.Slave
         liftIO $ putStrLn ("Accepted socket: " ++ show socket)
 
@@ -166,7 +165,7 @@ spec = do
           firstQuorum   = U.fromRight (Q.initialize addresses firstAddress)
           secondQuorum  = U.fromRight (Q.initialize addresses secondAddress)
 
-      _ <- resourceForkIO $ do
+      _ <- U.forkResource $ do
         [socket] <- NQ.accept firstQuorum T.Leader
         liftIO $ putStrLn ("Accepted socket: " ++ show socket)
 
@@ -183,11 +182,11 @@ spec = do
           firstQuorum   = U.fromRight (Q.initialize addresses firstAddress)
           secondQuorum  = U.fromRight (Q.initialize addresses secondAddress)
 
-      _ <- resourceForkIO $ do
+      _ <- U.forkResource $ do
         [socket] <- NQ.accept firstQuorum T.Leader
         liftIO $ putStrLn ("Leader accepted socket: " ++ show socket)
 
-      _ <- resourceForkIO $ do
+      _ <- U.forkResource $ do
         [socket] <- NQ.accept firstQuorum T.Slave
         liftIO $ putStrLn ("Slave accepted socket: " ++ show socket)
 

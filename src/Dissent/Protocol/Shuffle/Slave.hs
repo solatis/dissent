@@ -24,7 +24,7 @@ phase1 quorum =
   let acceptPredecessor = do
         mutex <- liftIO (newEmptyMVar)
         _ <- resourceForkIO $ do
-          [socket] <- NQ.accept quorum T.Leader
+          [socket] <- NQ.accept quorum T.Slave
           liftIO $ putMVar mutex socket
 
         return (mutex)

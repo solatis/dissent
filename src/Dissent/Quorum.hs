@@ -51,7 +51,7 @@ lookupPredecessorPeer quorum =
 -- | Retrieves the Peer object of a Slave's sucessor
 lookupSuccessorPeer :: T.Quorum -> T.Peer
 lookupSuccessorPeer quorum =
-  lookupPeer quorum (predecessorId quorum)
+  lookupPeer quorum (successorId quorum)
 
 -- | Returns the PeerId of our successor (who we have to connect to)
 successorId :: T.Quorum -> T.PeerId

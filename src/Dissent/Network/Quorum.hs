@@ -49,7 +49,10 @@ accept quorum peerType =
       num T.Slave  = 1
 
   in do
-    serverSocket   <- N.listen (port localAddr peerType)
+    serverSocket   <- D.log
+                        ("Now listening for connections at port " ++ show (port localAddr peerType))
+                        (N.listen (port localAddr peerType))
+
     connections    <- sequence (replicate (num peerType) (N.accept serverSocket))
 
     return (connections)
