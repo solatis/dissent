@@ -72,9 +72,9 @@ spec = do
     it "makes slaves send their encrypted message to the leader appropriately" $ runResourceT $ do
 
       let addr   = "127.0.0.1"
-          port1  = 4321
-          port2  = 4322
-          port3  = 4323
+          port1  = 4324
+          port2  = 4325
+          port3  = 4326
 
           quorum1 = U.fromRight (Q.initialize [ U.remoteStub addr port1
                                               , U.remoteStub addr port2
