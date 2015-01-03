@@ -27,7 +27,6 @@ phase1 :: T.Quorum                 -- ^ The Quorum we operate on
        -> ResourceT IO [NS.Socket] -- ^ The sockets we accepted
 phase1 quorum = (return . map fst) =<< (NQ.accept quorum T.Leader)
 
-
 -- | In the second phase, the leader receives all the encrypted messages from all
 --   the slaves.
 --

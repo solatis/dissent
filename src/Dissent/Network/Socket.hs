@@ -91,7 +91,9 @@ encodeAndSend socket msg =
   let encoded :: BSL.ByteString
       encoded = B.encode msg
 
-  in NSBL.sendAll socket encoded
+  in D.log
+       ("Now sending over socket: " ++ show (encoded))
+       (NSBL.sendAll socket encoded)
 
 -- | "Converts" a socket to a lazy bytestring. Useful when consuming / decoding
 --   multiple objects and we want to keep state.
@@ -122,6 +124,9 @@ receiveLBSAndDecode =
       handle decoded =
         case decoded of
          Left  (_,          _, msg) -> Left msg
-         Right (unconsumed, _, obj) -> Right (unconsumed, obj)
+         Right (unconsumed, _, obj) -> Right (unconsumed,
+                                              D.log
+                                                ("received object from socket")
+                                                (obj))
 
   in handle . decode

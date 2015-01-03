@@ -10,6 +10,7 @@ import           Control.Monad.Trans.Resource
 import qualified Network.Socket               as NS
 
 import qualified Dissent.Crypto.Rsa           as R
+import qualified Dissent.Internal.Debug       as D
 import qualified Dissent.Internal.Util        as U
 import qualified Dissent.Network.Quorum       as NQ
 import qualified Dissent.Network.Socket       as NS
@@ -19,7 +20,7 @@ import qualified Dissent.Types                as T
 run :: T.Quorum -> BS.ByteString -> IO ()
 run quorum message = runResourceT $ do
   connections <- phase1 quorum
-  _ <- phase2 quorum connections message
+  _ <- liftIO $ phase2 quorum connections message
 
   return ()
 
@@ -70,7 +71,7 @@ phase1 quorum =
 phase2 :: T.Quorum                         -- ^ The Quorum we operate on
        -> T.RemoteConnections              -- ^ The sockets we accepted
        -> BS.ByteString                    -- ^ The message we want to send
-       -> ResourceT IO ()
+       -> IO ()
 phase2 quorum connections datum =
 
       -- Single encryption pass. Encrypts a datum according to a list of nodes.
@@ -79,14 +80,16 @@ phase2 quorum connections datum =
   let encrypt :: [R.PublicKey] -> BS.ByteString -> IO [(BS.ByteString, R.Encrypted)]
       encrypt []     _     = return ([])
       encrypt (x:xs) msg = do
-          encrypted <- R.encrypt x msg
+          encrypted <- D.log
+                         ("Now encrypting message of length " ++ show (BS.length msg))
+                         (R.encrypt x msg)
           rest      <- encrypt xs (R.output encrypted)
 
           return ((msg, encrypted) : rest)
 
       runEncrypt resolver = encrypt (V.toList (V.map resolver (T.peers quorum)))
 
-  in liftIO $ do
+  in do
     -- First calculate the prime, which is based on the signing key
     c' <- runEncrypt (T.signingKey . T.remote) datum
 
