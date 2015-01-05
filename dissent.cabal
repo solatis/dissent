@@ -89,6 +89,7 @@ test-suite dissent-test
                        bytestring,
                        hspec,
                        QuickCheck,
+                       random,
 
                        dissent,
                        network,

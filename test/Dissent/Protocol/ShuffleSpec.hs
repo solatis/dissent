@@ -9,6 +9,9 @@ import           Control.Monad.Morph
 import           Control.Monad.Trans.Either
 import           Control.Monad.Trans.Resource
 
+import qualified Dissent.Network.Socket          as NS
+import qualified Network.Socket                  as NS
+
 import qualified Dissent.Protocol.Shuffle.Leader as PSL
 import qualified Dissent.Protocol.Shuffle.Slave  as PSS
 
@@ -18,12 +21,13 @@ import qualified Dissent.Quorum                  as Q (initialize)
 import qualified Dissent.Types                   as T
 import qualified Dissent.Util                    as U
 
+
 import           Test.Hspec
 
 spec :: Spec
 spec = do
   describe "launching the first phase" $ do
-    it "makes leaders and slaves see each other properly" $ runResourceT $ do
+    it "makes leaders and slaves see each other and perform handshaker properly" $ runResourceT $ do
 
       let addr   = "127.0.0.1"
           port1  = 4321
@@ -53,20 +57,40 @@ spec = do
       slave2        <- liftIO $ readMVar slave2Sync
       slave3        <- liftIO $ readMVar slave3Sync
 
-      liftIO $ do
-        length (U.fromRight leaderSockets) `shouldBe` 3
+      liftIO $
+        let [firstSock, secondSock, thirdSock] = U.fromRight leaderSockets
 
-        (T.id (T.peer (T.leader slave1)))      `shouldBe` 0
-        (T.id (T.peer (T.predecessor slave1))) `shouldBe` 2
-        (T.id (T.peer (T.successor slave1)))   `shouldBe` 1
+            socketsAreConnected :: NS.Socket -> NS.Socket -> IO Bool
+            socketsAreConnected lhs rhs = do
+              inputString <- U.randomString
 
-        (T.id (T.peer (T.leader slave2)))      `shouldBe` 0
-        (T.id (T.peer (T.predecessor slave2))) `shouldBe` 0
-        (T.id (T.peer (T.successor slave2)))   `shouldBe` 2
+              NS.encodeAndSend lhs inputString
+              outputString <- NS.receiveAndDecode rhs
 
-        (T.id (T.peer (T.leader slave3)))      `shouldBe` 0
-        (T.id (T.peer (T.predecessor slave3))) `shouldBe` 1
-        (T.id (T.peer (T.successor slave3)))   `shouldBe` 0
+              case outputString of
+               Left _    -> return (False)
+               Right str -> return (str == inputString)
+
+        in do
+          (T.id (T.peer (T.leader slave1)))      `shouldBe` 0
+          (T.id (T.peer (T.predecessor slave1))) `shouldBe` 2
+          (T.id (T.peer (T.successor slave1)))   `shouldBe` 1
+
+          (T.id (T.peer (T.leader slave2)))      `shouldBe` 0
+          (T.id (T.peer (T.predecessor slave2))) `shouldBe` 0
+          (T.id (T.peer (T.successor slave2)))   `shouldBe` 2
+
+          (T.id (T.peer (T.leader slave3)))      `shouldBe` 0
+          (T.id (T.peer (T.predecessor slave3))) `shouldBe` 1
+          (T.id (T.peer (T.successor slave3)))   `shouldBe` 0
+
+          -- These checks are *very* important: it validates that the socket the
+          -- way the leader orders them are the same as they appear in the
+          -- quorum (and thus, that the handshake was performed properly.)
+          socketsAreConnected firstSock  (T.socket (T.leader slave1)) `shouldReturn` True
+          socketsAreConnected secondSock (T.socket (T.leader slave2)) `shouldReturn` True
+          socketsAreConnected thirdSock  (T.socket (T.leader slave3)) `shouldReturn` True
+
 
 
   describe "launching the second phase" $ do

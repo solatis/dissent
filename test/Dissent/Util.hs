@@ -6,10 +6,18 @@ import qualified Dissent.Types      as T
 import           Network.Socket     (HostName, PortNumber)
 import           System.IO.Unsafe   (unsafePerformIO)
 
+import           System.Random
+
 
 fromRight :: Either a b -> b
 fromRight (Right r) = r
 fromRight (Left  _) = error ("Not a right!")
+
+randomString :: IO String
+randomString = do
+  gen <- newStdGen
+
+  return (take 10 $ randomRs ('a','z') gen)
 
 remoteStub :: HostName -> PortNumber -> T.Remote
 remoteStub h p =
