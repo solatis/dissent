@@ -6,7 +6,7 @@ import           Control.Concurrent.MVar         (readMVar)
 
 import           Control.Monad.IO.Class          (liftIO)
 import           Control.Monad.Morph
-import           Control.Monad.Trans.Either
+import           Control.Monad.Trans.Except
 import           Control.Monad.Trans.Resource
 
 import qualified Dissent.Network.Socket          as NS
@@ -47,7 +47,7 @@ spec = do
                                               , U.remoteStub addr port3] (U.remoteStub addr port3))
 
       -- quorum1 is that of the leader, as verified by our Quorum test cases
-      leaderSocketsSync <- U.forkResource $ runEitherT $ PSL.phase1 quorum1
+      leaderSocketsSync <- U.forkResource $ runExceptT $ PSL.phase1 quorum1
       slave3Sync        <- U.forkResource $ PSS.phase1 quorum3
       slave2Sync        <- U.forkResource $ PSS.phase1 quorum2
       slave1Sync        <- U.forkResource $ PSS.phase1 quorum1
@@ -91,8 +91,6 @@ spec = do
           socketsAreConnected secondSock (T.socket (T.leader slave2)) `shouldReturn` True
           socketsAreConnected thirdSock  (T.socket (T.leader slave3)) `shouldReturn` True
 
-
-
   describe "launching the second phase" $ do
     it "makes slaves send their encrypted message to the leader appropriately" $ runResourceT $ do
 
@@ -115,7 +113,7 @@ spec = do
 
           -- quorum1 is that of the leader, as verified by our Quorum test cases
           runLeader :: ResourceT IO (Either String [R.Encrypted])
-          runLeader = runEitherT $ do
+          runLeader = runExceptT $ do
             sockets <- PSL.phase1 quorum1
             hoist liftIO (PSL.phase2 sockets)
 

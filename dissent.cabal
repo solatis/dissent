@@ -75,6 +75,7 @@ library
                        async,
                        resourcet,
                        transformers,
+                       transformers-compat,
                        mmorph,
                        lifted-base,
                        vector
@@ -96,6 +97,7 @@ test-suite dissent-test
                        async,
                        resourcet,
                        transformers,
+                       transformers-compat,
                        either,
                        mmorph,
                        lifted-base,
