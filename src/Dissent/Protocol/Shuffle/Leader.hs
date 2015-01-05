@@ -29,10 +29,6 @@ run quorum = runResourceT $ do
    Left  e -> error ("Something went wrong: " ++ e)
    Right b -> return (b)
 
-handleError :: Either a b -> b
-handleError (Right b) = b
-handleError _ = error ("Something went terribly wrong!")
-
 -- | In the first phase, our leader will open a socket that
 --   slaves can connect to, and will wait for all slaves to
 --   connect to the quorum.
