@@ -4,6 +4,7 @@ import           Control.Monad.IO.Class       (liftIO)
 import           Control.Monad.Morph
 import           Control.Monad.Trans.Except
 import           Control.Monad.Trans.Resource
+
 import           Data.List                    (sortBy)
 
 import qualified Network.Socket               as NS
@@ -55,7 +56,7 @@ phase1 quorum =
       handShake :: NS.Socket -> ExceptT String (ResourceT IO) T.PeerId
       handShake socket = do
         peerId <- liftIO $ NS.receiveAndDecode socket
-        hoist generalize (except peerId)
+        either throwE return peerId
 
       -- Now, after this process, we have a list of sockets, and a list
       -- of peer ids. Once we put them in a zipped list, we have a convenient
@@ -87,7 +88,7 @@ phase2 :: [NS.Socket]                     -- ^ The Sockets we accepted
                                           --   slaves.
 phase2 sockets = do
   ciphers <- liftIO $ mapM NS.receiveAndDecode sockets
-  hoist generalize (except (sequence ciphers))
+  either throwE return (sequence ciphers)
 
 -- | In the third phase, the leader sends all the ciphers to the first node
 --   in the quorum.
