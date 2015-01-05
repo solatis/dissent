@@ -48,9 +48,9 @@ spec = do
 
       -- quorum1 is that of the leader, as verified by our Quorum test cases
       leaderSocketsSync <- U.forkResource $ runEitherT $ PSL.phase1 quorum1
-      slave1Sync        <- U.forkResource $ PSS.phase1 quorum1
-      slave2Sync        <- U.forkResource $ PSS.phase1 quorum2
       slave3Sync        <- U.forkResource $ PSS.phase1 quorum3
+      slave2Sync        <- U.forkResource $ PSS.phase1 quorum2
+      slave1Sync        <- U.forkResource $ PSS.phase1 quorum1
 
       leaderSockets <- liftIO $ readMVar leaderSocketsSync
       slave1        <- liftIO $ readMVar slave1Sync
