@@ -27,13 +27,20 @@ run quorum message = runResourceT $ do
 -- | Phase 1 for slaves, which does three things:
 --   - accept a connection from its predecessor;
 --   - connects to its successor;
---   - connects to the leader.
+--   - connects to the leader and performs handshake.
 phase1 :: T.Quorum                         -- ^ The Quorum we operate on
        -> ResourceT IO T.RemoteConnections -- ^ The Sockets we accepted
 phase1 quorum =
   let acceptPredecessor = U.forkResource (NQ.accept quorum T.Slave)
       connectSuccessor  = NQ.connect quorum T.Slave  NQ.Infinity
       connectLeader     = NQ.connect quorum T.Leader NQ.Infinity
+
+      -- | After a connection with a leader has been established, we need to
+      --   perform a small handshake. At the moment, this only means we have
+      --   to announce our PeerId to the leader.
+      handShake :: (Either String (NS.Socket, NS.SockAddr)) -> IO ()
+      handShake (Right (leaderSock, _)) = NS.encodeAndSend leaderSock (T.selfId quorum)
+      handShake _ = error ("Unable to connect to leader")
 
       -- | Constructs a RemoteConnections object out of the objects we have got
       --   after establishing connections with our remotes.
@@ -53,21 +60,23 @@ phase1 quorum =
       -- could not be established. Since, at the moment, we block infinitely
       -- until all connections *have* been established, this should never be
       -- and an assertion would be appropriate.
-      remoteConnections _ _ _ = undefined
+      remoteConnections _ _ _ = error ("Unable to connect to all remote connections")
 
   in do
     -- Asynchronously starts listening for connection of predecessor
     predecessorMutex <- acceptPredecessor
 
-    leaderSock    <- connectLeader
-    successorSock <- connectSuccessor
+    leaderSock       <- connectLeader
+    liftIO $ handShake (leaderSock)
+
+    successorSock    <- connectSuccessor
 
     -- Wait until our predecessor has connected
     [predecessorSock] <- liftIO $ readMVar predecessorMutex
 
     return (remoteConnections leaderSock predecessorSock successorSock)
 
--- | Implements the data submission phase as described in the paper.
+-- | Phase 2 implements the data submission phase as described in the paper.
 phase2 :: T.Quorum                         -- ^ The Quorum we operate on
        -> T.RemoteConnections              -- ^ The sockets we accepted
        -> BS.ByteString                    -- ^ The message we want to send

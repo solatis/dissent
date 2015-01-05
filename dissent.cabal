@@ -65,6 +65,7 @@ library
 
   build-depends:       base,
                        errors,
+                       either,
                        bytestring,                       
                        binary,
 
@@ -74,6 +75,7 @@ library
                        async,
                        resourcet,
                        transformers,
+                       mmorph,
                        lifted-base,
                        vector
 
@@ -93,6 +95,8 @@ test-suite dissent-test
                        async,
                        resourcet,
                        transformers,
+                       either,
+                       mmorph,
                        lifted-base,
                        vector
 

@@ -5,7 +5,9 @@ module Dissent.Protocol.ShuffleSpec where
 import           Control.Concurrent.MVar         (readMVar)
 
 import           Control.Monad.IO.Class          (liftIO)
-import           Control.Monad.Trans.Resource    (runResourceT)
+import           Control.Monad.Morph
+import           Control.Monad.Trans.Either
+import           Control.Monad.Trans.Resource
 
 import qualified Dissent.Protocol.Shuffle.Leader as PSL
 import qualified Dissent.Protocol.Shuffle.Slave  as PSS
@@ -41,7 +43,7 @@ spec = do
                                               , U.remoteStub addr port3] (U.remoteStub addr port3))
 
       -- quorum1 is that of the leader, as verified by our Quorum test cases
-      leaderSocketsSync <- U.forkResource $ PSL.phase1 quorum1
+      leaderSocketsSync <- U.forkResource $ runEitherT $ PSL.phase1 quorum1
       slave1Sync        <- U.forkResource $ PSS.phase1 quorum1
       slave2Sync        <- U.forkResource $ PSS.phase1 quorum2
       slave3Sync        <- U.forkResource $ PSS.phase1 quorum3
@@ -52,7 +54,7 @@ spec = do
       slave3        <- liftIO $ readMVar slave3Sync
 
       liftIO $ do
-        length (leaderSockets) `shouldBe` 3
+        length (U.fromRight leaderSockets) `shouldBe` 3
 
         (T.id (T.peer (T.leader slave1)))      `shouldBe` 0
         (T.id (T.peer (T.predecessor slave1))) `shouldBe` 2
@@ -65,7 +67,6 @@ spec = do
         (T.id (T.peer (T.leader slave3)))      `shouldBe` 0
         (T.id (T.peer (T.predecessor slave3))) `shouldBe` 1
         (T.id (T.peer (T.successor slave3)))   `shouldBe` 0
-
 
 
   describe "launching the second phase" $ do
@@ -89,9 +90,10 @@ spec = do
                                               , U.remoteStub addr port3] (U.remoteStub addr port3))
 
           -- quorum1 is that of the leader, as verified by our Quorum test cases
-          runLeader = do
+          runLeader :: ResourceT IO (Either String [R.Encrypted])
+          runLeader = runEitherT $ do
             sockets <- PSL.phase1 quorum1
-            liftIO $ PSL.phase2 (sockets)
+            hoist liftIO (PSL.phase2 sockets)
 
           runSlave quorum msg = do
             connections <- PSS.phase1 quorum
@@ -103,11 +105,14 @@ spec = do
       _           <- U.forkResource $ runSlave quorum2 "i am your slave"
       _           <- U.forkResource $ runSlave quorum3 "i am your slave"
 
-      [first, second, third] <- liftIO $ readMVar leaderSync
+      ciphers <- liftIO $ readMVar leaderSync
 
-      liftIO $ do
-        R.output (U.fromRight first)  `shouldSatisfy` (/= R.output (U.fromRight  second))
-        R.output (U.fromRight first)  `shouldSatisfy` (/= R.output (U.fromRight  third))
+      liftIO $
+        let [first, second, third] = U.fromRight ciphers
 
-        -- We use the same public keys, but the AES input vector and key will differ
-        R.output (U.fromRight second) `shouldSatisfy` (/= R.output (U.fromRight  third))
+        in do
+          R.output (first)  `shouldSatisfy` (/= R.output (second))
+          R.output (first)  `shouldSatisfy` (/= R.output (third))
+
+          -- We use the same public keys, but the AES input vector and key will differ
+          R.output (second) `shouldSatisfy` (/= R.output (third))
