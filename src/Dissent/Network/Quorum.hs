@@ -7,7 +7,6 @@ import           Control.Exception            (IOException)
 import           Control.Monad.IO.Class       (liftIO)
 import           Control.Monad.Trans.Resource
 
-import qualified Data.Vector                  as V
 import qualified Network.Socket               as NS
 
 import qualified Dissent.Internal.Debug       as D
@@ -45,7 +44,7 @@ accept quorum peerType =
       -- from all nodes in the quorum (including itself), while a slave only accepts
       -- a connection from its predecessor.
       num          :: T.PeerType -> Int
-      num T.Leader = V.length (T.peers quorum)
+      num T.Leader = length (T.peers quorum)
       num T.Slave  = 1
 
   in do

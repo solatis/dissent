@@ -2,7 +2,6 @@
 module Dissent.Types where
 
 import           Data.Maybe         ()
-import           Data.Vector
 import           Network
 
 import           Dissent.Crypto.Rsa as R (PublicKey)
@@ -75,14 +74,14 @@ data Quorum = Quorum {
   leaderId :: PeerId,
 
   -- | All the peers in the quorum, including ourselves
-  peers    :: Vector Peer
+  peers    :: [Peer]
 
   } deriving (Eq, Show)
 
 -- | Default constructor for a Quorum, with our leader being
 --   the first node in the quorum.
 quorumDefault :: PeerId      -- ^ Who are we ?
-              -> Vector Peer -- ^ All peers in Quorum
+              -> [Peer]      -- ^ All peers in Quorum
               -> Quorum      -- ^ Resulting quorum
 quorumDefault quorumSelfId quorumPeers =
   let quorumLeaderId = 0

@@ -1,7 +1,6 @@
 module Dissent.Protocol.Shuffle.Slave where
 
 import qualified Data.ByteString              as BS
-import qualified Data.Vector                  as V
 
 import           Control.Concurrent
 import           Control.Monad.IO.Class       (liftIO)
@@ -96,7 +95,7 @@ phase2 quorum connections datum =
 
           return ((msg, encrypted) : rest)
 
-      runEncrypt resolver = encrypt (V.toList (V.map resolver (T.peers quorum)))
+      runEncrypt resolver = encrypt (map resolver (T.peers quorum))
 
   in do
     -- First calculate the prime, which is based on the signing key
