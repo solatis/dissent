@@ -16,7 +16,6 @@ import qualified Dissent.Types                as T
 
 run :: T.Quorum -> IO ()
 run quorum = runResourceT $ do
-
   result <- runErrorT $ do
     sockets <- phase1 quorum
     ciphers <- phase2 sockets
