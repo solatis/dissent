@@ -36,8 +36,10 @@ run quorum = runResourceT $ do
 --   connect to the quorum.
 --
 --   This is a blocking operation.
-phase1 :: (MonadIO m, MonadError String m, MonadResource m)
-       => T.Quorum                         -- ^ The Quorum we operate on
+phase1 :: ( MonadIO m
+          , MonadError String m
+          , MonadResource m)
+       => T.Quorum               -- ^ The Quorum we operate on
        -> m [NS.Socket]          -- ^ The sockets we accepted
 phase1 quorum =
 
@@ -85,10 +87,11 @@ phase1 quorum =
 --   the slaves.
 --
 --   This is a blocking operation.
-phase2 :: (MonadIO m, MonadError String m)
-          => [NS.Socket]                     -- ^ The Sockets we accepted
-          -> m [R.Encrypted] -- ^ All the encrypted messages we received from the
-                                             --   slaves.
+phase2 :: ( MonadIO m
+          , MonadError String m)
+       => [NS.Socket]      -- ^ The Sockets we accepted
+       -> m [R.Encrypted]  -- ^ All the encrypted messages we received from the
+                           --   slaves.
 phase2 sockets = do
   ciphers <- liftIO $ mapM NS.receiveAndDecode sockets
   either throwError return (sequence ciphers)
