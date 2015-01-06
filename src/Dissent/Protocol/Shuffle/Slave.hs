@@ -19,7 +19,7 @@ import qualified Dissent.Types                as T
 run :: T.Quorum -> BS.ByteString -> IO ()
 run quorum message = runResourceT $ do
   connections <- phase1 quorum
-  _ <- liftIO $ phase2 quorum connections message
+  _ <- phase2 quorum connections message
 
   return ()
 
