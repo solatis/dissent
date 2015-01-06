@@ -1,9 +1,13 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 module Dissent.Protocol.Shuffle.Leader where
 
-import           Control.Monad.IO.Class       (liftIO)
+import           Control.Monad.Error
+import           Control.Monad.Error.Class
+import           Control.Monad.IO.Class
 import           Control.Monad.Morph
-import           Control.Monad.Trans.Except
 import           Control.Monad.Trans.Resource
+import           Control.Monad.Trans.Resource.Internal
 
 import           Data.List                    (sortBy)
 
@@ -14,15 +18,12 @@ import qualified Dissent.Network.Quorum       as NQ
 import qualified Dissent.Network.Socket       as NS
 import qualified Dissent.Types                as T
 
-instance MFunctor (ExceptT e) where
-    hoist nat m = ExceptT (nat (runExceptT m))
-
 run :: T.Quorum -> IO ()
 run quorum = runResourceT $ do
 
-  result <- runExceptT $ do
+  result <- runErrorT $ do
     sockets <- phase1 quorum
-    ciphers <- hoist liftIO (phase2 sockets)
+    ciphers <- phase2 sockets
     _       <- hoist liftIO (phase3 sockets ciphers)
     return ()
 
@@ -35,8 +36,9 @@ run quorum = runResourceT $ do
 --   connect to the quorum.
 --
 --   This is a blocking operation.
-phase1 :: T.Quorum                                  -- ^ The Quorum we operate on
-       -> ExceptT String (ResourceT IO) [NS.Socket] -- ^ The sockets we accepted
+phase1 :: (MonadIO m, MonadError String m, MonadResource m)
+       => T.Quorum                         -- ^ The Quorum we operate on
+       -> m [NS.Socket]          -- ^ The sockets we accepted
 phase1 quorum =
 
   let accepted = NQ.accept quorum T.Leader
@@ -53,10 +55,10 @@ phase1 quorum =
       -- which socket to associate with which peer.
       --
       -- This is a blocking operation.
-      handShake :: NS.Socket -> ExceptT String (ResourceT IO) T.PeerId
+      --handShake :: NS.Socket -> ErrorT String (ResourceT IO) T.PeerId
       handShake socket = do
         peerId <- liftIO $ NS.receiveAndDecode socket
-        either throwE return peerId
+        either throwError return peerId
 
       -- Now, after this process, we have a list of sockets, and a list
       -- of peer ids. Once we put them in a zipped list, we have a convenient
@@ -70,7 +72,7 @@ phase1 quorum =
         in sortBy predicate
 
   in do
-    unorderedSockets <- lift $ sockets
+    unorderedSockets <- liftResourceT $ sockets
 
     -- Retrieve all peer ids
     peerIds        <- mapM handShake unorderedSockets
@@ -83,21 +85,23 @@ phase1 quorum =
 --   the slaves.
 --
 --   This is a blocking operation.
-phase2 :: [NS.Socket]                     -- ^ The Sockets we accepted
-       -> ExceptT String IO [R.Encrypted] -- ^ All the encrypted messages we received from the
-                                          --   slaves.
+phase2 :: (MonadIO m, MonadError String m)
+          => [NS.Socket]                     -- ^ The Sockets we accepted
+          -> m [R.Encrypted] -- ^ All the encrypted messages we received from the
+                                             --   slaves.
 phase2 sockets = do
   ciphers <- liftIO $ mapM NS.receiveAndDecode sockets
-  either throwE return (sequence ciphers)
+  either throwError return (sequence ciphers)
 
 -- | In the third phase, the leader sends all the ciphers to the first node
 --   in the quorum.
 --
 --   Note that in our implementation, the first node is always the leader
 --   itself.
-phase3 :: [NS.Socket]    -- ^ All connections to all slaves
+phase3 :: MonadIO m
+       => [NS.Socket]    -- ^ All connections to all slaves
        -> [R.Encrypted]  -- ^ The ciphers we received from all slaves
-       -> ExceptT String IO ()
+       -> m ()
 phase3 sockets ciphers =
   let firstSocket :: NS.Socket
       firstSocket = head sockets

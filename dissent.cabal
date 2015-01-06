@@ -76,6 +76,7 @@ library
                        resourcet,
                        transformers,
                        transformers-compat,
+                       mtl,
                        mmorph,
                        lifted-base,
                        vector
@@ -98,6 +99,7 @@ test-suite dissent-test
                        resourcet,
                        transformers,
                        transformers-compat,
+                       mtl,
                        either,
                        mmorph,
                        lifted-base,
