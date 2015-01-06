@@ -3,11 +3,7 @@
 module Dissent.Protocol.Shuffle.Leader where
 
 import           Control.Monad.Error
-import           Control.Monad.Error.Class
-import           Control.Monad.IO.Class
-import           Control.Monad.Morph
 import           Control.Monad.Trans.Resource
-import           Control.Monad.Trans.Resource.Internal
 
 import           Data.List                    (sortBy)
 
@@ -24,7 +20,7 @@ run quorum = runResourceT $ do
   result <- runErrorT $ do
     sockets <- phase1 quorum
     ciphers <- phase2 sockets
-    _       <- hoist liftIO (phase3 sockets ciphers)
+    _       <- phase3 sockets ciphers
     return ()
 
   case result of
@@ -48,7 +44,6 @@ phase1 quorum =
       -- Returns all accepted sockets from all slaves.
       --
       -- This is a blocking operation.
-      sockets  :: ResourceT IO [NS.Socket]
       sockets  = (return . map fst) =<< accepted
 
       -- After a connection has been established with a slave, we
@@ -57,7 +52,6 @@ phase1 quorum =
       -- which socket to associate with which peer.
       --
       -- This is a blocking operation.
-      --handShake :: NS.Socket -> ErrorT String (ResourceT IO) T.PeerId
       handShake socket = do
         peerId <- liftIO $ NS.receiveAndDecode socket
         either throwError return peerId
