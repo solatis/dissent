@@ -3,7 +3,7 @@ module Dissent.Protocol.Shuffle.Slave where
 import qualified Data.ByteString              as BS
 
 import           Control.Concurrent
-import           Control.Monad.IO.Class       (liftIO)
+import           Control.Monad.IO.Class
 import           Control.Monad.Trans.Resource
 
 import qualified Network.Socket               as NS
@@ -27,8 +27,10 @@ run quorum message = runResourceT $ do
 --   - accept a connection from its predecessor;
 --   - connects to its successor;
 --   - connects to the leader and performs handshake.
-phase1 :: T.Quorum                         -- ^ The Quorum we operate on
-       -> ResourceT IO T.RemoteConnections -- ^ The Sockets we accepted
+phase1 :: ( MonadIO m
+          , MonadResource m)
+       => T.Quorum              -- ^ The Quorum we operate on
+       -> m T.RemoteConnections -- ^ The Sockets we accepted
 phase1 quorum =
   let acceptPredecessor = U.forkResource (NQ.accept quorum T.Slave)
       connectSuccessor  = NQ.connect quorum T.Slave  NQ.Infinity
@@ -63,12 +65,12 @@ phase1 quorum =
 
   in do
     -- Asynchronously starts listening for connection of predecessor
-    predecessorMutex <- acceptPredecessor
+    predecessorMutex <- liftResourceT $ acceptPredecessor
 
-    leaderSock       <- connectLeader
+    leaderSock       <- liftResourceT $ connectLeader
     liftIO $ handShake (leaderSock)
 
-    successorSock    <- connectSuccessor
+    successorSock    <- liftResourceT $ connectSuccessor
 
     -- Wait until our predecessor has connected
     [predecessorSock] <- liftIO $ readMVar predecessorMutex
@@ -76,10 +78,11 @@ phase1 quorum =
     return (remoteConnections leaderSock predecessorSock successorSock)
 
 -- | Phase 2 implements the data submission phase as described in the paper.
-phase2 :: T.Quorum                         -- ^ The Quorum we operate on
+phase2 :: (MonadIO m)
+       => T.Quorum                         -- ^ The Quorum we operate on
        -> T.RemoteConnections              -- ^ The sockets we accepted
        -> BS.ByteString                    -- ^ The message we want to send
-       -> IO ()
+       -> m ()
 phase2 quorum connections datum =
 
       -- Single encryption pass. Encrypts a datum according to a list of nodes.
@@ -99,13 +102,11 @@ phase2 quorum connections datum =
 
   in do
     -- First calculate the prime, which is based on the signing key
-    c' <- runEncrypt (T.signingKey . T.remote) datum
+    c' <- liftIO $ runEncrypt (T.signingKey . T.remote) datum
 
     -- Now calculate the cipher, which is based on the encryption key, and
     -- uses the final prime as input.
-    c  <- runEncrypt (T.signingKey . T.remote) (R.output (snd (last c')))
+    c  <- liftIO $ runEncrypt (T.signingKey . T.remote) (R.output (snd (last c')))
 
     -- Send our encrypted data to the leader.
-    NS.encodeAndSend (T.socket (T.leader connections)) (snd (last c))
-
-    return ()
+    liftIO $ NS.encodeAndSend (T.socket (T.leader connections)) (snd (last c))
