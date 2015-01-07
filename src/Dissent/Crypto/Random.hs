@@ -61,10 +61,10 @@ seedRng =
   --
   -- OpenSSL's PRNG uses an internal state of 1023 bytes. Thus, for a perfect
   -- seed, we feed it 1023 bytes from a pure/strong random source.
-  let length = 1023
+  let l = 1023
   in do
-    bytes <- OR.randBytes length
-    OR.add bytes length
+    bytes <- OR.randBytes l
+    OR.add bytes l
 
 -- | Our actual shuffle implementation, which combines the pure shuffle function
 --   with the distribution function to shuffle a list.
