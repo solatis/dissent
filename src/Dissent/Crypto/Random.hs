@@ -17,7 +17,7 @@ module Dissent.Crypto.Random where
 
 import           OpenSSL        (withOpenSSL)
 import           OpenSSL.BN     (randIntegerZeroToNMinusOne)
-import qualified           OpenSSL.Random as OR (randBytes, add)
+import qualified OpenSSL.Random as OR (add, randBytes)
 
 -- | Extracts an item from the list at a certain position, and
 --   returns the remainders of the list
