@@ -54,6 +54,7 @@ library
                        Dissent.Network.Quorum,
 
                        Dissent.Crypto.Rsa,
+                       Dissent.Crypto.Random,
 
                        Dissent.Protocol.Shuffle,
                        Dissent.Protocol.Shuffle.Leader,

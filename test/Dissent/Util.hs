@@ -19,6 +19,12 @@ randomString = do
 
   return (take 10 $ randomRs ('a','z') gen)
 
+randomList :: Int -> IO [Int]
+randomList l = do
+  gen <- newStdGen
+
+  return (take l $ randomRs (0,9) gen)
+
 remoteStub :: HostName -> PortNumber -> T.Remote
 remoteStub h p =
   let serializedPkey = unlines ["-----BEGIN PUBLIC KEY-----",
