@@ -4,30 +4,34 @@ module Dissent.Quorum where
 import           Control.Error.Util (note)
 import           Data.List          (elemIndex, find, sort)
 import           Data.Maybe         ()
-import qualified Dissent.Types      as T
+
+import qualified Dissent.Types.Quorum as TQ
+import qualified Dissent.Types.Remote as TR
+import qualified Dissent.Types.Peer as TP
+
 
 -- | Initialize our Quorum description
-initialize :: [T.Remote]              -- ^ Addresses of all nodes in quorum (including ourselves, order is irrelevant)
-           -> T.Remote                -- ^ Who are we?
-           -> Either String T.Quorum  -- ^ Resulting Quorum, or error message
+initialize :: [TR.Remote]              -- ^ Addresses of all nodes in quorum (including ourselves, order is irrelevant)
+           -> TR.Remote                -- ^ Who are we?
+           -> Either String TQ.Quorum  -- ^ Resulting Quorum, or error message
 initialize addresses self =
   let constructQuorum peers =
-        fmap (\selfId -> T.quorumDefault selfId peers) (lookupPeerId self peers)
+        fmap (\selfId -> TQ.quorumDefault selfId peers) (lookupPeerId self peers)
 
-      constructPeers :: T.PeerId -> [T.Remote] -> [T.Peer]
+      constructPeers :: TP.Id -> [TR.Remote] -> [TP.Peer]
       constructPeers _ [] = []
       constructPeers offset (x:xs) =
-        [(T.peerDefault offset x)] ++ (constructPeers (offset + 1) xs)
+        [(TP.peerDefault offset x)] ++ (constructPeers (offset + 1) xs)
 
-      lookupPeerId :: T.Remote -> [T.Peer] -> Either String T.PeerId
+      lookupPeerId :: TR.Remote -> [TP.Peer] -> Either String TP.Id
       lookupPeerId address peers =
-        let isRemote :: T.Peer -> Bool
-            isRemote peer      = T.remote peer == address
+        let isRemote :: TP.Peer -> Bool
+            isRemote peer      = TP.remote peer == address
 
-            lookupPeerByRemote :: [T.Peer] -> Maybe T.Peer
+            lookupPeerByRemote :: [TP.Peer] -> Maybe TP.Peer
             lookupPeerByRemote = find isRemote
 
-            peerIndex :: Maybe T.Peer -> Maybe Int
+            peerIndex :: Maybe TP.Peer -> Maybe Int
             peerIndex = maybe Nothing (\peer -> elemIndex peer peers)
 
             handleError = note ("Cannot find address in quorum: " ++ show address)
@@ -37,54 +41,54 @@ initialize addresses self =
   in constructQuorum (constructPeers 0 (sort addresses))
 
 -- | Retrieves Peer from Quorum based on PeerId, crashes when peer not found
-lookupPeer :: T.Quorum -> T.PeerId -> T.Peer
+lookupPeer :: TQ.Quorum -> TP.Id -> TP.Peer
 lookupPeer quorum peerId =
-  T.peers quorum !! peerId
+  TQ.peers quorum !! peerId
 
 -- | Retrieves our own Peer object from the Quorum
-lookupSelfPeer :: T.Quorum -> T.Peer
+lookupSelfPeer :: TQ.Quorum -> TP.Peer
 lookupSelfPeer quorum =
-  let selfId = T.selfId quorum
+  let selfId = TQ.selfId quorum
   in  lookupPeer quorum selfId
 
 -- | Retrieves the Peer object of the Leader of the Quorum
-lookupLeaderPeer :: T.Quorum -> T.Peer
+lookupLeaderPeer :: TQ.Quorum -> TP.Peer
 lookupLeaderPeer quorum =
-  let selfId = T.leaderId quorum
+  let selfId = TQ.leaderId quorum
   in  lookupPeer quorum selfId
 
 -- | Retrieves the Peer object of a Slave's predecessor
-lookupPredecessorPeer :: T.Quorum -> T.Peer
+lookupPredecessorPeer :: TQ.Quorum -> TP.Peer
 lookupPredecessorPeer quorum =
   lookupPeer quorum (predecessorId quorum)
 
 -- | Retrieves the Peer object of a Slave's sucessor
-lookupSuccessorPeer :: T.Quorum -> T.Peer
+lookupSuccessorPeer :: TQ.Quorum -> TP.Peer
 lookupSuccessorPeer quorum =
   lookupPeer quorum (successorId quorum)
 
 -- | Returns the PeerId of our successor (who we have to connect to)
-successorId :: T.Quorum -> T.PeerId
+successorId :: TQ.Quorum -> TP.Id
 successorId quorum =
-  let selfId     = T.selfId quorum
-      quorumSize = length (T.peers quorum)
+  let selfId     = TQ.selfId quorum
+      quorumSize = length (TQ.peers quorum)
   in  (selfId + 1) `mod` quorumSize
 
 -- | Returns the PeerId of our predecessor (who connects to us)
-predecessorId :: T.Quorum -> T.PeerId
+predecessorId :: TQ.Quorum -> TP.Id
 predecessorId quorum =
-  let selfId     = T.selfId quorum
-      quorumSize = length (T.peers quorum)
+  let selfId     = TQ.selfId quorum
+      quorumSize = length (TQ.peers quorum)
   in  (selfId - 1) `mod` quorumSize
 
 -- | Determines the Peer type based on a peer's id
-peerType :: T.Quorum -> T.PeerId -> T.PeerType
+peerType :: TQ.Quorum -> TP.Id -> TP.Type
 peerType quorum peerId =
   let peer   = lookupPeer quorum peerId
       leader = lookupLeaderPeer quorum
 
-  in if (peer == leader) then (T.Leader) else (T.Slave)
+  in if (peer == leader) then (TP.Leader) else (TP.Slave)
 
 -- | Determines the Peer type of ourselves
-selfPeerType :: T.Quorum -> T.PeerType
-selfPeerType quorum = peerType (quorum) (T.selfId quorum)
+selfPeerType :: TQ.Quorum -> TP.Type
+selfPeerType quorum = peerType (quorum) (TQ.selfId quorum)

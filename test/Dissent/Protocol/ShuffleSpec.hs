@@ -18,9 +18,10 @@ import qualified Dissent.Protocol.Shuffle.Slave  as PSS
 import qualified Dissent.Crypto.Rsa              as R
 import qualified Dissent.Internal.Util           as U
 import qualified Dissent.Quorum                  as Q (initialize)
-import qualified Dissent.Types                   as T
 import qualified Dissent.Util                    as U
 
+import qualified Dissent.Types.Connection        as TC
+import qualified Dissent.Types.Peer              as TP
 
 import           Test.Hspec
 
@@ -72,24 +73,24 @@ spec = do
                Right str -> return (str == inputString)
 
         in do
-          (T.id (T.peer (T.leader slave1)))      `shouldBe` 0
-          (T.id (T.peer (T.predecessor slave1))) `shouldBe` 2
-          (T.id (T.peer (T.successor slave1)))   `shouldBe` 1
+          (TP.id (TC.peer (TC.leader slave1)))      `shouldBe` 0
+          (TP.id (TC.peer (TC.predecessor slave1))) `shouldBe` 2
+          (TP.id (TC.peer (TC.successor slave1)))   `shouldBe` 1
 
-          (T.id (T.peer (T.leader slave2)))      `shouldBe` 0
-          (T.id (T.peer (T.predecessor slave2))) `shouldBe` 0
-          (T.id (T.peer (T.successor slave2)))   `shouldBe` 2
+          (TP.id (TC.peer (TC.leader slave2)))      `shouldBe` 0
+          (TP.id (TC.peer (TC.predecessor slave2))) `shouldBe` 0
+          (TP.id (TC.peer (TC.successor slave2)))   `shouldBe` 2
 
-          (T.id (T.peer (T.leader slave3)))      `shouldBe` 0
-          (T.id (T.peer (T.predecessor slave3))) `shouldBe` 1
-          (T.id (T.peer (T.successor slave3)))   `shouldBe` 0
+          (TP.id (TC.peer (TC.leader slave3)))      `shouldBe` 0
+          (TP.id (TC.peer (TC.predecessor slave3))) `shouldBe` 1
+          (TP.id (TC.peer (TC.successor slave3)))   `shouldBe` 0
 
           -- These checks are *very* important: it validates that the socket the
           -- way the leader orders them are the same as they appear in the
           -- quorum (and thus, that the handshake was performed properly.)
-          socketsAreConnected firstSock  (T.socket (T.leader slave1)) `shouldReturn` True
-          socketsAreConnected secondSock (T.socket (T.leader slave2)) `shouldReturn` True
-          socketsAreConnected thirdSock  (T.socket (T.leader slave3)) `shouldReturn` True
+          socketsAreConnected firstSock  (TC.socket (TC.leader slave1)) `shouldReturn` True
+          socketsAreConnected secondSock (TC.socket (TC.leader slave2)) `shouldReturn` True
+          socketsAreConnected thirdSock  (TC.socket (TC.leader slave3)) `shouldReturn` True
 
   describe "launching the second phase" $ do
     it "makes slaves send their encrypted message to the leader appropriately" $ runResourceT $ do

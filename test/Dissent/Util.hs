@@ -2,12 +2,13 @@
 module Dissent.Util where
 
 import qualified Dissent.Crypto.Rsa as R
-import qualified Dissent.Types      as T
 import           Network.Socket     (HostName, PortNumber)
 import           System.IO.Unsafe   (unsafePerformIO)
 
 import           System.Random
 
+
+import qualified Dissent.Types.Remote      as TR
 
 fromRight :: Either a b -> b
 fromRight (Right r) = r
@@ -25,7 +26,7 @@ randomList l = do
 
   return (take l $ randomRs (0,9) gen)
 
-remoteStub :: HostName -> PortNumber -> T.Remote
+remoteStub :: HostName -> PortNumber -> TR.Remote
 remoteStub h p =
   let serializedPkey = unlines ["-----BEGIN PUBLIC KEY-----",
                                 "MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEArcrRDTxwvdhrgGDFd9zn",
@@ -43,4 +44,4 @@ remoteStub h p =
                                 "-----END PUBLIC KEY-----"]
       generateKey = unsafePerformIO $ R.deserializePublicKey (serializedPkey)
 
-  in T.Remote h p generateKey generateKey
+  in TR.Remote h p generateKey generateKey

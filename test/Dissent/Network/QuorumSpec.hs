@@ -11,8 +11,9 @@ import qualified Dissent.Internal.Util        as U
 import qualified Dissent.Network.Quorum       as NQ
 import qualified Dissent.Network.Socket       as NS
 import qualified Dissent.Quorum               as Q (initialize)
-import qualified Dissent.Types                as T
 import qualified Dissent.Util                 as U
+
+import qualified Dissent.Types.Peer           as TP
 
 import           Test.Hspec
 
@@ -27,7 +28,7 @@ spec = do
           quorum = U.fromRight (Q.initialize [U.remoteStub "0.0.0.0" port, U.remoteStub addr port, U.remoteStub "0.0.0.1" port] (U.remoteStub addr port))
 
       _ <- U.forkResource $ do
-        [socket] <- NQ.accept quorum T.Slave
+        [socket] <- NQ.accept quorum TP.Slave
         liftIO $ putStrLn ("Accepted socket: " ++ show socket)
 
       liftIO $ do
@@ -48,7 +49,7 @@ spec = do
           quorum = U.fromRight (Q.initialize [U.remoteStub "0.0.0.0" port, U.remoteStub addr port, U.remoteStub "0.0.0.1" port] (U.remoteStub addr port))
 
       _ <- U.forkResource $ do
-        [socket] <- NQ.accept quorum T.Slave
+        [socket] <- NQ.accept quorum TP.Slave
         liftIO $ putStrLn ("Accepted socket: " ++ show socket)
 
       liftIO $ do
@@ -71,7 +72,7 @@ spec = do
 
           quorum   = U.fromRight (Q.initialize addresses firstAddress)
 
-      result <- NQ.connect quorum T.Slave (NQ.Attempts 10)
+      result <- NQ.connect quorum TP.Slave (NQ.Attempts 10)
       liftIO $ (result `shouldBe` Left "Unable to connect to remote")
 
     it "fails when the leader but not the slave is available" $ runResourceT $ do
@@ -83,10 +84,10 @@ spec = do
           secondQuorum  = U.fromRight (Q.initialize addresses secondAddress)
 
       _ <- U.forkResource $ do
-        [socket] <- NQ.accept firstQuorum T.Leader
+        [socket] <- NQ.accept firstQuorum TP.Leader
         liftIO $ putStrLn ("Accepted socket: " ++ show socket)
 
-      result <- NQ.connect secondQuorum T.Slave (NQ.Attempts 10)
+      result <- NQ.connect secondQuorum TP.Slave (NQ.Attempts 10)
 
       liftIO $
         result `shouldBe` Left "Unable to connect to remote"
@@ -100,10 +101,10 @@ spec = do
           secondQuorum  = U.fromRight (Q.initialize addresses secondAddress)
 
       _ <- U.forkResource $ do
-        [socket] <- NQ.accept firstQuorum T.Slave
+        [socket] <- NQ.accept firstQuorum TP.Slave
         liftIO $ putStrLn ("Accepted socket: " ++ show socket)
 
-      result <- NQ.connect secondQuorum T.Slave (NQ.Infinity)
+      result <- NQ.connect secondQuorum TP.Slave (NQ.Infinity)
 
       liftIO $ do
         isRight (result) `shouldBe` True
@@ -117,14 +118,14 @@ spec = do
           secondQuorum  = U.fromRight (Q.initialize addresses secondAddress)
 
       _ <- U.forkResource $ do
-        [socket] <- NQ.accept firstQuorum T.Leader
+        [socket] <- NQ.accept firstQuorum TP.Leader
         liftIO $ putStrLn ("Leader accepted socket: " ++ show socket)
 
       _ <- U.forkResource $ do
-        [socket] <- NQ.accept firstQuorum T.Slave
+        [socket] <- NQ.accept firstQuorum TP.Slave
         liftIO $ putStrLn ("Slave accepted socket: " ++ show socket)
 
-      result <- NQ.connect secondQuorum T.Slave (NQ.Infinity)
+      result <- NQ.connect secondQuorum TP.Slave (NQ.Infinity)
 
       liftIO $ do
         isRight (result) `shouldBe` True
@@ -138,7 +139,7 @@ spec = do
 
           quorum   = U.fromRight (Q.initialize addresses firstAddress)
 
-      result <- NQ.connect quorum T.Leader (NQ.Attempts 10)
+      result <- NQ.connect quorum TP.Leader (NQ.Attempts 10)
       liftIO $ (result `shouldBe` Left "Unable to connect to remote")
 
     it "fails when the slave but not the leader is available" $ runResourceT $ do
@@ -150,10 +151,10 @@ spec = do
           secondQuorum  = U.fromRight (Q.initialize addresses secondAddress)
 
       _ <- U.forkResource $ do
-        [socket] <- NQ.accept firstQuorum T.Slave
+        [socket] <- NQ.accept firstQuorum TP.Slave
         liftIO $ putStrLn ("Accepted socket: " ++ show socket)
 
-      result <- NQ.connect secondQuorum T.Leader (NQ.Attempts 10)
+      result <- NQ.connect secondQuorum TP.Leader (NQ.Attempts 10)
 
       liftIO $
         result `shouldBe` Left "Unable to connect to remote"
@@ -167,10 +168,10 @@ spec = do
           secondQuorum  = U.fromRight (Q.initialize addresses secondAddress)
 
       _ <- U.forkResource $ do
-        [socket] <- NQ.accept firstQuorum T.Leader
+        [socket] <- NQ.accept firstQuorum TP.Leader
         liftIO $ putStrLn ("Accepted socket: " ++ show socket)
 
-      result <- NQ.connect secondQuorum T.Leader (NQ.Infinity)
+      result <- NQ.connect secondQuorum TP.Leader (NQ.Infinity)
 
       liftIO $ do
         isRight (result) `shouldBe` True
@@ -184,14 +185,14 @@ spec = do
           secondQuorum  = U.fromRight (Q.initialize addresses secondAddress)
 
       _ <- U.forkResource $ do
-        [socket] <- NQ.accept firstQuorum T.Leader
+        [socket] <- NQ.accept firstQuorum TP.Leader
         liftIO $ putStrLn ("Leader accepted socket: " ++ show socket)
 
       _ <- U.forkResource $ do
-        [socket] <- NQ.accept firstQuorum T.Slave
+        [socket] <- NQ.accept firstQuorum TP.Slave
         liftIO $ putStrLn ("Slave accepted socket: " ++ show socket)
 
-      result <- NQ.connect secondQuorum T.Leader (NQ.Infinity)
+      result <- NQ.connect secondQuorum TP.Leader (NQ.Infinity)
 
       liftIO $ do
         isRight (result) `shouldBe` True

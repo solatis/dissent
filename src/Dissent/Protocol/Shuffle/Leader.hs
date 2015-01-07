@@ -12,9 +12,11 @@ import qualified Network.Socket               as NS
 import qualified Dissent.Crypto.Rsa           as R
 import qualified Dissent.Network.Quorum       as NQ
 import qualified Dissent.Network.Socket       as NS
-import qualified Dissent.Types                as T
 
-run :: T.Quorum -> IO ()
+import qualified Dissent.Types.Quorum         as TQ
+import qualified Dissent.Types.Peer           as TP
+
+run :: TQ.Quorum -> IO ()
 run quorum = runResourceT $ do
   result <- runErrorT $ do
     sockets <- phase1 quorum
@@ -34,11 +36,11 @@ run quorum = runResourceT $ do
 phase1 :: ( MonadIO m
           , MonadError String m
           , MonadResource m)
-       => T.Quorum               -- ^ The Quorum we operate on
+       => TQ.Quorum              -- ^ The Quorum we operate on
        -> m [NS.Socket]          -- ^ The sockets we accepted
 phase1 quorum =
 
-  let accepted = NQ.accept quorum T.Leader
+  let accepted = NQ.accept quorum TP.Leader
 
       -- Returns all accepted sockets from all slaves.
       --
@@ -59,7 +61,7 @@ phase1 quorum =
       -- of peer ids. Once we put them in a zipped list, we have a convenient
       -- way to sort them by peer id, thus allowing us to easily look up a
       -- socket by a peer's id.
-      sortSockets :: [(T.PeerId, NS.Socket)] -> [(T.PeerId, NS.Socket)]
+      sortSockets :: [(TP.Id, NS.Socket)] -> [(TP.Id, NS.Socket)]
       sortSockets =
         let predicate lhs rhs | (fst lhs) < (fst rhs) = LT
                               | (fst lhs) > (fst rhs) = GT

@@ -59,7 +59,11 @@ library
                        Dissent.Protocol.Shuffle,
                        Dissent.Protocol.Shuffle.Leader,
                        Dissent.Protocol.Shuffle.Slave,
-                       Dissent.Types,
+
+                       Dissent.Types.Quorum,
+                       Dissent.Types.Connection,
+                       Dissent.Types.Peer,
+                       Dissent.Types.Remote,
 
                        Dissent.Internal.Debug,
                        Dissent.Internal.Util

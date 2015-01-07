@@ -1,22 +1,29 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 module Dissent.Protocol.Shuffle.Slave where
 
 import qualified Data.ByteString              as BS
 
 import           Control.Concurrent
-import           Control.Monad.IO.Class
+import           Control.Monad.Error
 import           Control.Monad.Trans.Resource
 
 import qualified Network.Socket               as NS
 
 import qualified Dissent.Crypto.Rsa           as R
+import qualified Dissent.Crypto.Random        as R
 import qualified Dissent.Internal.Debug       as D
 import qualified Dissent.Internal.Util        as U
 import qualified Dissent.Network.Quorum       as NQ
 import qualified Dissent.Network.Socket       as NS
 import qualified Dissent.Quorum               as Q
-import qualified Dissent.Types                as T
 
-run :: T.Quorum -> BS.ByteString -> IO ()
+import qualified Dissent.Types.Quorum         as TQ
+import qualified Dissent.Types.Remote         as TR
+import qualified Dissent.Types.Peer           as TP
+import qualified Dissent.Types.Connection     as TC
+
+run :: TQ.Quorum -> BS.ByteString -> IO ()
 run quorum message = runResourceT $ do
   connections <- phase1 quorum
   _ <- phase2 quorum connections message
@@ -29,18 +36,18 @@ run quorum message = runResourceT $ do
 --   - connects to the leader and performs handshake.
 phase1 :: ( MonadIO m
           , MonadResource m)
-       => T.Quorum              -- ^ The Quorum we operate on
-       -> m T.RemoteConnections -- ^ The Sockets we accepted
+       => TQ.Quorum              -- ^ The Quorum we operate on
+       -> m TC.Connections -- ^ The Sockets we accepted
 phase1 quorum =
-  let acceptPredecessor = U.forkResource (NQ.accept quorum T.Slave)
-      connectSuccessor  = NQ.connect quorum T.Slave  NQ.Infinity
-      connectLeader     = NQ.connect quorum T.Leader NQ.Infinity
+  let acceptPredecessor = U.forkResource (NQ.accept quorum TP.Slave)
+      connectSuccessor  = NQ.connect quorum TP.Slave  NQ.Infinity
+      connectLeader     = NQ.connect quorum TP.Leader NQ.Infinity
 
       -- | After a connection with a leader has been established, we need to
       --   perform a small handshake. At the moment, this only means we have
       --   to announce our PeerId to the leader.
       handShake :: (Either String (NS.Socket, NS.SockAddr)) -> IO ()
-      handShake (Right (leaderSock, _)) = NS.encodeAndSend leaderSock (T.selfId quorum)
+      handShake (Right (leaderSock, _)) = NS.encodeAndSend leaderSock (TQ.selfId quorum)
       handShake _ = error ("Unable to connect to leader")
 
       -- | Constructs a RemoteConnections object out of the objects we have got
@@ -48,14 +55,14 @@ phase1 quorum =
       remoteConnections :: Either String (NS.Socket, NS.SockAddr)
                         -> (NS.Socket, NS.SockAddr)
                         -> Either String (NS.Socket, NS.SockAddr)
-                        -> T.RemoteConnections
+                        -> TC.Connections
 
       -- Specialization for when all connections could be established.
       remoteConnections (Right (leaderSock, _)) (predecessorSock, _) (Right (successorSock, _)) =
-        T.RemoteConnections
-          (T.RemoteConnection (Q.lookupLeaderPeer      quorum) leaderSock)
-          (T.RemoteConnection (Q.lookupPredecessorPeer quorum) predecessorSock)
-          (T.RemoteConnection (Q.lookupSuccessorPeer   quorum) successorSock)
+        TC.Connections
+          (TC.Connection (Q.lookupLeaderPeer      quorum) leaderSock)
+          (TC.Connection (Q.lookupPredecessorPeer quorum) predecessorSock)
+          (TC.Connection (Q.lookupSuccessorPeer   quorum) successorSock)
 
       -- If this specialization is reached, it means that one of the connections
       -- could not be established. Since, at the moment, we block infinitely
@@ -79,8 +86,8 @@ phase1 quorum =
 
 -- | Phase 2 implements the data submission phase as described in the paper.
 phase2 :: (MonadIO m)
-       => T.Quorum                         -- ^ The Quorum we operate on
-       -> T.RemoteConnections              -- ^ The sockets we accepted
+       => TQ.Quorum                         -- ^ The Quorum we operate on
+       -> TC.Connections              -- ^ The sockets we accepted
        -> BS.ByteString                    -- ^ The message we want to send
        -> m ()
 phase2 quorum connections datum =
@@ -98,15 +105,45 @@ phase2 quorum connections datum =
 
           return ((msg, encrypted) : rest)
 
-      runEncrypt resolver = encrypt (map resolver (T.peers quorum))
+      runEncrypt resolver = encrypt (map resolver (TQ.peers quorum))
 
   in do
     -- First calculate the prime, which is based on the signing key
-    c' <- liftIO $ runEncrypt (T.signingKey . T.remote) datum
+    c' <- liftIO $ runEncrypt (TR.signingKey . TP.remote) datum
 
     -- Now calculate the cipher, which is based on the encryption key, and
     -- uses the final prime as input.
-    c  <- liftIO $ runEncrypt (T.signingKey . T.remote) (R.output (snd (last c')))
+    c  <- liftIO $ runEncrypt (TR.signingKey . TP.remote) (R.output (snd (last c')))
 
     -- Send our encrypted data to the leader.
-    liftIO $ NS.encodeAndSend (T.socket (T.leader connections)) (snd (last c))
+    liftIO $ NS.encodeAndSend (TC.socket (TC.leader connections)) (snd (last c))
+
+
+-- | In phase 3 all slaves accept data from its predecessor, decrypt it, and send
+--   the decrypted data to its sucessor.
+phase3 :: ( MonadIO m
+          , MonadError String m)
+       => TQ.Quorum             -- The quorum we operate on
+       -> TC.Connections  -- The sockets we accepted
+       -> m ()
+phase3 quorum connections =
+      -- Based on our own peer type, determines the socket we expect data from.
+      -- Specifically, the first slave in the quorum is not accepting data from
+      -- its predecessor, but rather from the leader.
+  let predecessorSocket :: TP.Type -> NS.Socket
+      predecessorSocket TP.Leader = TC.socket (TC.leader      connections)
+      predecessorSocket TP.Slave  = TC.socket (TC.predecessor connections)
+
+      receiveCiphers socket = do
+        ciphers <- liftIO $ NS.receiveAndDecode socket
+        either throwError return ciphers
+
+      decrypt :: R.Encrypted -> IO R.Encrypted
+      decrypt encrypted = undefined
+
+  in do
+    ciphers   <- receiveCiphers (predecessorSocket (Q.selfPeerType quorum))
+    shuffled  <- liftIO $ R.shuffle ciphers
+    decrypted <- liftIO $ mapM decrypt shuffled
+
+    return ()
