@@ -9,15 +9,15 @@ import           Dissent.Crypto.Rsa as R (PublicKey)
 data Remote = Remote {
   -- | Hostname of peer. This can be a "real" hostname, or a IPv4/IPv6
   --   address.
-  hostName      :: HostName,
+  hostName            :: HostName,
 
   -- | Port the peer listens at
-  port          :: PortNumber,
+  port                :: PortNumber,
 
   -- | Public key of the peer used for signing
-  signingKey    :: R.PublicKey,
+  publicSigningKey    :: R.PublicKey,
 
   -- | Public key of the peer used for encryption
-  encryptionKey :: R.PublicKey
+  publicEncryptionKey :: R.PublicKey
 
   } deriving (Eq, Show, Ord)

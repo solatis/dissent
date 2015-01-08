@@ -12,6 +12,7 @@ data Type = Leader | Slave
 
 -- | Information about a remote peer within our Quorum
 data Peer = Peer {
+
   -- | Offset of peer in quorum
   id     :: Id,
 

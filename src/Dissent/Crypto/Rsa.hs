@@ -42,7 +42,7 @@ type PrivateKey = RSA.RSAKeyPair
 data KeyPair = KeyPair {
   public  :: PublicKey,
   private :: PrivateKey
-  }
+  } deriving (Eq, Show)
 
 data Encrypted = Encrypted {
   output :: BS.ByteString,  -- ^ Output string

@@ -2,7 +2,9 @@
 
 module Dissent.Protocol.Shuffle.Slave where
 
+import qualified Data.Binary                  as B
 import qualified Data.ByteString              as BS
+import qualified Data.ByteString.Lazy         as BSL
 
 import           Control.Concurrent
 import           Control.Monad.Error
@@ -22,11 +24,16 @@ import qualified Dissent.Types.Quorum         as TQ
 import qualified Dissent.Types.Remote         as TR
 import qualified Dissent.Types.Peer           as TP
 import qualified Dissent.Types.Connection     as TC
+import qualified Dissent.Types.Self           as TS
 
-run :: TQ.Quorum -> BS.ByteString -> IO ()
-run quorum message = runResourceT $ do
+run :: TS.Self -> TQ.Quorum -> BS.ByteString -> IO ()
+run self quorum message = runResourceT $ do
   connections <- phase1 quorum
   _ <- phase2 quorum connections message
+
+  _ <- runErrorT $ do
+    _ <- phase3 (TS.secret self) quorum connections
+    return ()
 
   return ()
 
@@ -109,41 +116,57 @@ phase2 quorum connections datum =
 
   in do
     -- First calculate the prime, which is based on the signing key
-    c' <- liftIO $ runEncrypt (TR.signingKey . TP.remote) datum
+    c' <- liftIO $ runEncrypt (TR.publicSigningKey . TP.remote) datum
 
     -- Now calculate the cipher, which is based on the encryption key, and
     -- uses the final prime as input.
-    c  <- liftIO $ runEncrypt (TR.signingKey . TP.remote) (R.output (snd (last c')))
+    c  <- liftIO $ runEncrypt (TR.publicEncryptionKey . TP.remote) (R.output (snd (last c')))
 
     -- Send our encrypted data to the leader.
     liftIO $ NS.encodeAndSend (TC.socket (TC.leader connections)) (snd (last c))
-
 
 -- | In phase 3 all slaves accept data from its predecessor, decrypt it, and send
 --   the decrypted data to its sucessor.
 phase3 :: ( MonadIO m
           , MonadError String m)
-       => TQ.Quorum             -- The quorum we operate on
+       => TS.Secret       -- Our secret keys
+       -> TQ.Quorum       -- The quorum we operate on
        -> TC.Connections  -- The sockets we accepted
        -> m ()
-phase3 quorum connections =
-      -- Based on our own peer type, determines the socket we expect data from.
-      -- Specifically, the first slave in the quorum is not accepting data from
-      -- its predecessor, but rather from the leader.
-  let predecessorSocket :: TP.Type -> NS.Socket
-      predecessorSocket TP.Leader = TC.socket (TC.leader      connections)
-      predecessorSocket TP.Slave  = TC.socket (TC.predecessor connections)
+phase3 secret quorum connections =
+      -- The first slave of the quorum expects the message from the leader
+  let predecessorSocket :: NS.Socket
+      predecessorSocket =
+        case (Q.selfIsFirst quorum) of
+         True  -> TC.socket (TC.leader connections)
+         False -> TC.socket (TC.successor connections)
+
+      -- The last slave in the quorum sends the decrypted ciphers to the leader
+      successorSocket :: NS.Socket
+      successorSocket =
+        case (Q.selfIsLast quorum) of
+         True  -> TC.socket (TC.leader connections)
+         False -> TC.socket (TC.successor connections)
 
       receiveCiphers socket = do
         ciphers <- liftIO $ NS.receiveAndDecode socket
         either throwError return ciphers
 
-      decrypt :: R.Encrypted -> IO R.Encrypted
-      decrypt encrypted = undefined
+      -- | Decrypts with signing key
+      decrypt :: ( MonadIO m
+                 , MonadError String m)
+              => R.Encrypted
+              -> m R.Encrypted
+      decrypt encrypted = do
+        bytestring <- liftIO $ R.decrypt (R.private (TS.signingKey secret)) encrypted
+
+        case (B.decodeOrFail (BSL.fromStrict bytestring)) of
+         Left  (_, _, msg) -> throwError msg
+         Right (_, _, obj) -> return obj
 
   in do
-    ciphers   <- receiveCiphers (predecessorSocket (Q.selfPeerType quorum))
+    ciphers   <- receiveCiphers predecessorSocket
     shuffled  <- liftIO $ R.shuffle ciphers
-    decrypted <- liftIO $ mapM decrypt shuffled
+    decrypted <- mapM decrypt shuffled
 
-    return ()
+    liftIO $ NS.encodeAndSend successorSocket decrypted

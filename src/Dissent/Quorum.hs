@@ -9,7 +9,6 @@ import qualified Dissent.Types.Quorum as TQ
 import qualified Dissent.Types.Remote as TR
 import qualified Dissent.Types.Peer as TP
 
-
 -- | Initialize our Quorum description
 initialize :: [TR.Remote]              -- ^ Addresses of all nodes in quorum (including ourselves, order is irrelevant)
            -> TR.Remote                -- ^ Who are we?
@@ -92,3 +91,14 @@ peerType quorum peerId =
 -- | Determines the Peer type of ourselves
 selfPeerType :: TQ.Quorum -> TP.Type
 selfPeerType quorum = peerType (quorum) (TQ.selfId quorum)
+
+
+-- | Determines if we are the first node in the quorum
+selfIsFirst :: TQ.Quorum -> Bool
+selfIsFirst quorum =
+  (TQ.selfId quorum) == 0
+
+-- | Determines if we are the last node in the quorum
+selfIsLast :: TQ.Quorum -> Bool
+selfIsLast quorum =
+  (TQ.selfId quorum) == (length (TQ.peers quorum) - 1)

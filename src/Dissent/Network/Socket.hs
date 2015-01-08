@@ -11,6 +11,7 @@
 module Dissent.Network.Socket where
 
 import qualified Data.Binary                    as B
+import qualified Data.ByteString                as BS
 import qualified Data.ByteString.Lazy           as BSL
 import           Data.Either                    ()
 
@@ -21,6 +22,7 @@ import           Control.Monad.IO.Class         (liftIO)
 import           Control.Monad.Trans.Resource
 
 import qualified Network.Socket                 as NS
+import qualified Network.Socket.ByteString      as NSB
 import qualified Network.Socket.ByteString.Lazy as NSBL
 
 import qualified Dissent.Internal.Debug         as D
@@ -94,6 +96,14 @@ encodeAndSend socket msg =
   in D.log
        ("Now sending over socket: " ++ show (encoded))
        (NSBL.sendAll socket encoded)
+
+-- | Puts message on socket. Depending upon the size of the message, might block.
+sendBS :: NS.Socket -> BS.ByteString -> IO ()
+sendBS socket msg =
+  D.log
+    ("Now sending over socket: " ++ show (msg))
+    (NSB.sendAll socket msg)
+
 
 -- | "Converts" a socket to a lazy bytestring. Useful when consuming / decoding
 --   multiple objects and we want to keep state.
