@@ -47,6 +47,7 @@ library
 
   if flag(debug)
     cpp-options: -DDEBUG
+    ghc-options: -fhpc
 
   exposed-modules:     Dissent,
                        Dissent.Quorum,
@@ -90,10 +91,19 @@ library
 
 test-suite dissent-test
   type:                exitcode-stdio-1.0
-  ghc-options:         -Wall -ferror-spans -threaded -auto-all -caf-all -fno-warn-type-defaults
+  ghc-options:         -Wall -ferror-spans -threaded -auto-all -caf-all -fno-warn-type-defaults -fhpc
   default-language:    Haskell2010
   hs-source-dirs:      test
   main-is:             Main.hs
+  other-modules:       Dissent.Util,
+                       Dissent.QuorumSpec,
+                       Dissent.Protocol.ShuffleSpec,
+                       Dissent.Network.QuorumSpec,
+                       Dissent.Crypto.RsaSpec,
+                       Dissent.Crypto.RandomSpec,
+                       Spec,
+                       Main
+
   build-depends:       base,
                        bytestring,
                        hspec,
@@ -111,6 +121,15 @@ test-suite dissent-test
                        mmorph,
                        lifted-base,
                        vector
+
+test-suite hpc
+    type:             exitcode-stdio-1.0
+    default-language: Haskell2010
+    hs-source-dirs:   test
+    main-is:          HPC.hs
+    build-depends:    base,
+                      process,
+                      regex-compat
 
 benchmark dissent-benchmark-crypto
   type:                exitcode-stdio-1.0
