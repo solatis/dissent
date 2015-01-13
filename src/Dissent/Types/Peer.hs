@@ -23,4 +23,4 @@ data Peer = Peer {
 
 -- | Default constructor for a Peer
 peerDefault :: Id -> R.Remote -> Peer
-peerDefault peerId peerAddr = Peer peerId peerAddr
+peerDefault = Peer

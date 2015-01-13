@@ -53,9 +53,9 @@ phase1 quorum =
       -- | After a connection with a leader has been established, we need to
       --   perform a small handshake. At the moment, this only means we have
       --   to announce our PeerId to the leader.
-      handShake :: (Either String (NS.Socket, NS.SockAddr)) -> IO ()
+      handShake :: Either String (NS.Socket, NS.SockAddr) -> IO ()
       handShake (Right (leaderSock, _)) = NS.encodeAndSend leaderSock (TQ.selfId quorum)
-      handShake _ = error ("Unable to connect to leader")
+      handShake _ = error "Unable to connect to leader"
 
       -- | Constructs a RemoteConnections object out of the objects we have got
       --   after establishing connections with our remotes.
@@ -75,16 +75,16 @@ phase1 quorum =
       -- could not be established. Since, at the moment, we block infinitely
       -- until all connections *have* been established, this should never be
       -- and an assertion would be appropriate.
-      remoteConnections _ _ _ = error ("Unable to connect to all remote connections")
+      remoteConnections _ _ _ = error "Unable to connect to all remote connections"
 
   in do
     -- Asynchronously starts listening for connection of predecessor
-    predecessorMutex <- liftResourceT $ acceptPredecessor
+    predecessorMutex <- liftResourceT acceptPredecessor
 
-    leaderSock       <- liftResourceT $ connectLeader
-    liftIO $ handShake (leaderSock)
+    leaderSock       <- liftResourceT connectLeader
+    liftIO $ handShake leaderSock
 
-    successorSock    <- liftResourceT $ connectSuccessor
+    successorSock    <- liftResourceT connectSuccessor
 
     -- Wait until our predecessor has connected
     [predecessorSock] <- liftIO $ readMVar predecessorMutex
@@ -103,7 +103,7 @@ phase2 quorum connections datum =
       -- Returns an array of tuples with the source datum text and the encrypted
       -- representation.
   let encrypt :: [R.PublicKey] -> BS.ByteString -> IO [(BS.ByteString, R.Encrypted)]
-      encrypt []     _     = return ([])
+      encrypt []     _     = return []
       encrypt (x:xs) msg = do
           encrypted <- D.log
                          ("Now encrypting message of length " ++ show (BS.length msg))
@@ -137,16 +137,16 @@ phase3 secret quorum connections =
       -- The first slave of the quorum expects the message from the leader
   let predecessorSocket :: NS.Socket
       predecessorSocket =
-        case (Q.selfIsFirst quorum) of
-         True  -> TC.socket (TC.leader connections)
-         False -> TC.socket (TC.successor connections)
+        if Q.selfIsFirst quorum
+        then TC.socket (TC.leader connections)
+        else TC.socket (TC.successor connections)
 
       -- The last slave in the quorum sends the decrypted ciphers to the leader
       successorSocket :: NS.Socket
       successorSocket =
-        case (Q.selfIsLast quorum) of
-         True  -> TC.socket (TC.leader connections)
-         False -> TC.socket (TC.successor connections)
+        if   Q.selfIsLast quorum
+        then TC.socket (TC.leader connections)
+        else TC.socket (TC.successor connections)
 
       receiveCiphers socket = do
         ciphers <- liftIO $ NS.receiveAndDecode socket
@@ -160,7 +160,7 @@ phase3 secret quorum connections =
       decrypt encrypted = do
         bytestring <- liftIO $ R.decrypt (R.private (TS.signingKey secret)) encrypted
 
-        case (B.decodeOrFail (BSL.fromStrict bytestring)) of
+        case B.decodeOrFail (BSL.fromStrict bytestring) of
          Left  (_, _, msg) -> throwError msg
          Right (_, _, obj) -> return obj
 

@@ -26,7 +26,7 @@ run quorum = runResourceT $ do
 
   case result of
    Left  e -> error ("Something went wrong: " ++ e)
-   Right b -> return (b)
+   Right b -> return b
 
 -- | In the first phase, our leader will open a socket that
 --   slaves can connect to, and will wait for all slaves to
@@ -63,13 +63,13 @@ phase1 quorum =
       -- socket by a peer's id.
       sortSockets :: [(TP.Id, NS.Socket)] -> [(TP.Id, NS.Socket)]
       sortSockets =
-        let predicate lhs rhs | (fst lhs) < (fst rhs) = LT
-                              | (fst lhs) > (fst rhs) = GT
-                              | otherwise             = EQ
+        let predicate lhs rhs | fst lhs < fst rhs = LT
+                              | fst lhs > fst rhs = GT
+                              | otherwise         = EQ
         in sortBy predicate
 
   in do
-    unorderedSockets <- liftResourceT $ sockets
+    unorderedSockets <- liftResourceT sockets
 
     -- Retrieve all peer ids
     peerIds        <- mapM handShake unorderedSockets

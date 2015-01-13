@@ -6,6 +6,7 @@ import           Control.Exception            (IOException)
 
 import           Control.Monad.IO.Class       (liftIO)
 import           Control.Monad.Trans.Resource
+import           Control.Monad (replicateM)
 
 import qualified Network.Socket               as NS
 
@@ -24,7 +25,7 @@ import qualified Dissent.Types.Peer           as TP
 --   as both a leader and a slave, and it is useful to be able to distinguish
 --   the connections.
 port :: TR.Remote -> TP.Type -> NS.PortNumber
-port addr TP.Leader = (TR.port addr) + 1000
+port addr TP.Leader = TR.port addr + 1000
 port addr TP.Slave  = TR.port addr
 
 -- | Determines what host/port to start accepting connections on, accepts
@@ -55,9 +56,7 @@ accept quorum peerType =
                         ("Now listening for connections at port " ++ show (port localAddr peerType))
                         (N.listen (port localAddr peerType))
 
-    connections    <- sequence (replicate (num peerType) (N.accept serverSocket))
-
-    return (connections)
+    replicateM (num peerType) (N.accept serverSocket)
 
 -- | Data structure that either represents an Infinite amount of reconnects, or
 --   a finite number.
@@ -82,7 +81,7 @@ connect quorum peerType connectAttempts =
          TP.Slave  -> TP.remote (Q.lookupSuccessorPeer quorum)
 
       connectLoop :: ConnectAttempts -> ResourceT IO (Either String (NS.Socket, NS.SockAddr))
-      connectLoop (Attempts 0) = return (Left ("Unable to connect to remote"))
+      connectLoop (Attempts 0) = return (Left "Unable to connect to remote")
       connectLoop attemptsLeft =
 
         let handler :: Either IOException (NS.Socket, NS.SockAddr) -> ResourceT IO (Either String (NS.Socket, NS.SockAddr))
@@ -100,6 +99,6 @@ connect quorum peerType connectAttempts =
             remotePort :: NS.PortNumber
             remotePort = port lookupPeer peerType
 
-        in handler =<< (N.connect (TR.hostName lookupPeer) remotePort)
+        in handler =<< N.connect (TR.hostName lookupPeer) remotePort
 
   in connectLoop connectAttempts

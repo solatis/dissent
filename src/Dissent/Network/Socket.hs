@@ -31,9 +31,9 @@ create :: NS.Family -> ResourceT IO NS.Socket
 create family = do
   (_releaseKey, socket) <- allocate
     (NS.socket family NS.Stream NS.defaultProtocol)
-    (NS.close)
+    NS.close
 
-  return (socket)
+  return socket
 
 -- | Binds a socket for listening onto a certain address
 listen :: NS.PortNumber          -- ^ The port we'll be listening at
@@ -47,7 +47,7 @@ listen port =
       NS.bind   socket addr
       NS.listen socket 5
 
-    D.log ("Now listening on socket: " ++ show socket) (return (socket))
+    D.log ("Now listening on socket: " ++ show socket) (return socket)
 
 -- | Accepts a single socket. This is a blocking operation.
 accept :: NS.Socket                             -- ^ Server socket to accept connections from.
@@ -70,11 +70,11 @@ connect host port =
           D.log ("Resolved address: " ++ show addr) (return addr)
 
       sockAddr :: NS.AddrInfo -> NS.SockAddr
-      sockAddr addr = NS.addrAddress addr
+      sockAddr = NS.addrAddress
 
       connect' :: ResourceT IO (NS.Socket, NS.SockAddr)
       connect' = do
-        info   <- liftIO $ addrInfo
+        info   <- liftIO addrInfo
         socket <- create (NS.addrFamily info)
 
         let addr = sockAddr info
@@ -94,14 +94,14 @@ encodeAndSend socket msg =
       encoded = B.encode msg
 
   in D.log
-       ("Now sending over socket: " ++ show (encoded))
+       ("Now sending over socket: " ++ show encoded)
        (NSBL.sendAll socket encoded)
 
 -- | Puts message on socket. Depending upon the size of the message, might block.
 sendBS :: NS.Socket -> BS.ByteString -> IO ()
 sendBS socket msg =
   D.log
-    ("Now sending over socket: " ++ show (msg))
+    ("Now sending over socket: " ++ show msg)
     (NSB.sendAll socket msg)
 
 
@@ -120,7 +120,7 @@ receiveAndDecode socket = do
   -- It is important to note that it is here where we completely discard any
   -- unconsumed data.
   return (fmap
-            (\ (_, obj) -> obj)
+            snd
             (receiveLBSAndDecode lbs))
 
 -- | Attempts to retrieve message from socket and deserializes it into the
@@ -136,7 +136,7 @@ receiveLBSAndDecode =
          Left  (_,          _, msg) -> Left msg
          Right (unconsumed, _, obj) -> Right (unconsumed,
                                               D.log
-                                                ("received object from socket")
-                                                (obj))
+                                                "received object from socket"
+                                                obj)
 
   in handle . decode

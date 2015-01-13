@@ -57,7 +57,7 @@ cipherBits :: Int
 cipherBits = 256
 
 allCiphers :: IO [String]
-allCiphers = withOpenSSL $ Cipher.getCipherNames
+allCiphers = withOpenSSL Cipher.getCipherNames
 
 cipherName :: String
 cipherName = "AES-" ++ show cipherBits ++ "-CBC"
@@ -79,8 +79,8 @@ paddingBytes = quot 128 8
 
 -- | We will be using AES as Cipher for our RSA encryption
 getCipher :: IO Cipher.Cipher
-getCipher = withOpenSSL $ do
-  (return . fromJust) =<< (Cipher.getCipherByName cipherName)
+getCipher = withOpenSSL $
+  (return . fromJust) =<< Cipher.getCipherByName cipherName
 
 -- | We want to be able to represent our public key as string
 serializePublicKey :: PublicKey -> IO String
@@ -107,7 +107,7 @@ generateKeyPair = withOpenSSL $
       extractPublicKey = RSA.rsaCopyPublic
 
   in do
-    privateKey <- D.log ("Generating RSA key pair") (generateRsaKey)
+    privateKey <- D.log "Generating RSA key pair" generateRsaKey
     publicKey  <- extractPublicKey privateKey
 
     return (KeyPair publicKey privateKey)

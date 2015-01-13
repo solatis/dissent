@@ -9,9 +9,9 @@ import           Control.Monad.Trans.Resource
 --   in an MVar primitive.
 forkResource :: ResourceT IO a -> ResourceT IO (MVar a)
 forkResource handler = do
-  sync <- liftIO $ newEmptyMVar
+  sync <- liftIO newEmptyMVar
   _ <- resourceForkIO $ do
     res <- handler
     liftIO $ putMVar sync res
 
-  return (sync)
+  return sync

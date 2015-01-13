@@ -29,4 +29,4 @@ run quorum =
       waitAll = mapM_ A.wait
 
   in
-    waitAll =<< (actions (Q.selfPeerType quorum))
+    waitAll =<< actions (Q.selfPeerType quorum)

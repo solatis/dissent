@@ -15,12 +15,12 @@ initialize :: [TR.Remote]              -- ^ Addresses of all nodes in quorum (in
            -> Either String TQ.Quorum  -- ^ Resulting Quorum, or error message
 initialize addresses self =
   let constructQuorum peers =
-        fmap (\selfId -> TQ.quorumDefault selfId peers) (lookupPeerId self peers)
+        fmap (`TQ.quorumDefault` peers) (lookupPeerId self peers)
 
       constructPeers :: TP.Id -> [TR.Remote] -> [TP.Peer]
       constructPeers _ [] = []
       constructPeers offset (x:xs) =
-        [(TP.peerDefault offset x)] ++ (constructPeers (offset + 1) xs)
+        TP.peerDefault offset x : constructPeers (offset + 1) xs
 
       lookupPeerId :: TR.Remote -> [TP.Peer] -> Either String TP.Id
       lookupPeerId address peers =
@@ -31,7 +31,7 @@ initialize addresses self =
             lookupPeerByRemote = find isRemote
 
             peerIndex :: Maybe TP.Peer -> Maybe Int
-            peerIndex = maybe Nothing (\peer -> elemIndex peer peers)
+            peerIndex = maybe Nothing (`elemIndex` peers)
 
             handleError = note ("Cannot find address in quorum: " ++ show address)
 
@@ -86,19 +86,19 @@ peerType quorum peerId =
   let peer   = lookupPeer quorum peerId
       leader = lookupLeaderPeer quorum
 
-  in if (peer == leader) then (TP.Leader) else (TP.Slave)
+  in if peer == leader then TP.Leader else TP.Slave
 
 -- | Determines the Peer type of ourselves
 selfPeerType :: TQ.Quorum -> TP.Type
-selfPeerType quorum = peerType (quorum) (TQ.selfId quorum)
+selfPeerType quorum = peerType quorum (TQ.selfId quorum)
 
 
 -- | Determines if we are the first node in the quorum
 selfIsFirst :: TQ.Quorum -> Bool
 selfIsFirst quorum =
-  (TQ.selfId quorum) == 0
+  TQ.selfId quorum == 0
 
 -- | Determines if we are the last node in the quorum
 selfIsLast :: TQ.Quorum -> Bool
 selfIsLast quorum =
-  (TQ.selfId quorum) == (length (TQ.peers quorum) - 1)
+  TQ.selfId quorum == (length (TQ.peers quorum) - 1)

@@ -26,7 +26,7 @@ extract :: Int       -- ^ Offset, where 0 <= offset < length(list)
         -> (a, [a])  -- ^ Tuple with item and rest of the list
 extract offset list =
   let (lhs, rhs) = splitAt offset list
-  in (head rhs, lhs ++ (tail rhs))
+  in (head rhs, lhs ++ tail rhs)
 
 -- | Given a sequence (e1,...en), n > 0, to shuffle, and a sequence
 --   (r1,...r[n-1]) of numbers such that r[i] is an independent sample
@@ -38,7 +38,7 @@ shuffleWithDistribution :: [a]       -- ^ The sequence we want to shuffle
 shuffleWithDistribution l [] = l
 shuffleWithDistribution input (x:xs) =
   let (cur, rest) = extract x input
-  in  cur : (shuffleWithDistribution rest xs)
+  in  cur : shuffleWithDistribution rest xs
 
 
 -- | Generates a sequence of random numbers, such that r[i] is a sample with
@@ -50,7 +50,7 @@ generateDistribution i = do
   cur  <- randIntegerZeroToNMinusOne (toInteger i)
   rest <- generateDistribution (i - 1)
 
-  return (fromInteger (cur) : rest)
+  return (fromInteger cur : rest)
 
 -- | Seeds the OpenSSL pseudo-random number generator
 seedRng :: IO ()
