@@ -93,9 +93,9 @@ phase1 quorum =
 
 -- | Phase 2 implements the data submission phase as described in the paper.
 phase2 :: (MonadIO m)
-       => TQ.Quorum                         -- ^ The Quorum we operate on
-       -> TC.Connections              -- ^ The sockets we accepted
-       -> BS.ByteString                    -- ^ The message we want to send
+       => TQ.Quorum       -- ^ The Quorum we operate on
+       -> TC.Connections  -- ^ The sockets we accepted
+       -> BS.ByteString   -- ^ The message we want to send
        -> m ()
 phase2 quorum connections datum =
 
